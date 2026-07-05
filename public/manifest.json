@@ -1,0 +1,11 @@
+{
+  "name": "SIGAP SMAJA 1 Jatirogo",
+  "short_name": "SIGAP SMAJA",
+  "icons": [
+    { "src": "/logo-sma1jati.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A2A66",
+  "theme_color": "#0A2A66"
+}
