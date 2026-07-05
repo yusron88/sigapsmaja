@@ -1,12 +1,9 @@
 {
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/(manifest.json|logo-sma1jati.png|favicon.ico|sw.js)",
-      "destination": "/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "https://script.google.com/macros/s/AKfycbzYehEAmt-_dXekmzOnqgY7aJRkCcLsYK_TDFQhf1Ej2wDc-tQFv5wciilBMF3bKUIv/exec"
+      "source": "/((?!manifest.json|logo-sma1jati.png|favicon.ico|sw.js).*)" ,
+      "destination": "https://script.google.com/macros/s/AKfycbzYehEAmt-_dXekmzOnqgY7aJRkCcLsYK_TDFQhf1Ej2wDc-tQFv5wciilBMF3bKUIv/exec",
+      "permanent": false
     }
   ]
 }
