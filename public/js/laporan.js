@@ -55,3 +55,61 @@ async function refreshLaporan() {
                 status = '⚠️ Lapor Wali Kelas';
                 statusClass = 'warning';
             }
+            
+            tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${d.nama || '-'}</td>
+                <td>${d.kelas || '-'}</td>
+                <td>${d.totalPelanggaran || 0}</td>
+                <td>${d.totalPrestasi || 0}</td>
+                <td style="font-weight:700;color:${total > 50 ? '#dc2626' : '#16a34a'}">${total}</td>
+                <td class="${statusClass}">${status}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        showToast('Gagal refresh laporan: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
+// CETAK LAPORAN PDF
+// ============================================================
+async function cetakLaporan() {
+    const filter = document.getElementById('laporanKelas')?.value || 'Semua';
+    const msg = document.getElementById('laporanMessage');
+    
+    if (msg) {
+        msg.innerHTML = '<div class="loading">Membuat PDF...</div>';
+    }
+    
+    try {
+        const result = await callApi('generateReport', [filter]);
+        
+        if (result && result.success) {
+            if (msg) {
+                msg.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ PDF berhasil dibuat! <a href="${result.url}" target="_blank">Buka PDF</a>
+                    </div>
+                `;
+            }
+            showToast('PDF siap!', 'success');
+        } else {
+            if (msg) {
+                msg.innerHTML = '<div class="alert alert-danger">Gagal membuat PDF: ' + (result?.message || '') + '</div>';
+            }
+        }
+    } catch (err) {
+        if (msg) {
+            msg.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
+        }
+    }
+}
+
+// Event listener untuk filter laporan
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'laporanKelas') {
+        refreshLaporan();
+    }
+});
