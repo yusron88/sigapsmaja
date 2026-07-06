@@ -5,6 +5,81 @@ let currentUser = null;
 let currentRole = 'siswa';
 let chartInstance = null;
 
+// Konfigurasi URL Web App Google Apps Script
+const API_URL = 'https://script.google.com/macros/s/AKfycbyM8eEAj-NpyY2h9MSq4EG8tScaT3qywRE4V_9iP0_jgYug3B87PvvfOUTrMV4QLEtM/exec';
+
+// ============================================================
+// UTILITY: Fungsi untuk memanggil API
+// ============================================================
+async function callApi(action, params = []) {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Penting untuk Google Apps Script
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: action,
+        params: params
+      })
+    });
+    
+    // Karena mode no-cors, response tidak bisa dibaca langsung
+    // Kita perlu menggunakan pendekatan alternatif dengan mengirim data melalui URL
+    return await handleApiResponse(action, params);
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+}
+
+// ============================================================
+// ALTERNATIF: Menggunakan JSONP atau Redirect
+// ============================================================
+function callApiAlternative(action, params = []) {
+  return new Promise((resolve, reject) => {
+    // Buat form untuk submit ke Google Apps Script
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = 'hiddenFrame';
+    form.style.display = 'none';
+    
+    // Tambahkan parameter
+    const data = {
+      action: action,
+      params: params
+    };
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'data';
+    input.value = JSON.stringify(data);
+    form.appendChild(input);
+    
+    // Buat iframe untuk menerima response
+    const iframe = document.createElement('iframe');
+    iframe.name = 'hiddenFrame';
+    iframe.style.display = 'none';
+    iframe.onload = function() {
+      try {
+        const content = iframe.contentWindow.document.body.textContent;
+        const result = JSON.parse(content);
+        resolve(result);
+      } catch (e) {
+        reject(e);
+      }
+      document.body.removeChild(iframe);
+      document.body.removeChild(form);
+    };
+    
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+
 // ============================================================
 // LOGIN
 // ============================================================
@@ -14,26 +89,99 @@ function handleLogin(e) {
   const password = document.getElementById('loginPassword').value.trim();
   const errorEl = document.getElementById('loginError');
   errorEl.textContent = '';
+  errorEl.innerHTML = '<div class="loading">Memproses login...</div>';
   
-  google.script.run
-    .withSuccessHandler(function(result) {
-      if (result.success) {
-        currentUser = result;
-        currentRole = result.role;
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('userNameDisplay').textContent = result.nama || result.username;
-        document.getElementById('userRoleDisplay').textContent = result.role;
-        initApp();
-      } else {
-        errorEl.textContent = result.message || 'Login gagal';
-      }
+  // Gunakan fetch dengan mode no-cors
+  fetch(API_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      action: 'doLogin',
+      params: [username, password]
     })
-    .withFailureHandler(function(err) {
-      errorEl.textContent = 'Terjadi kesalahan: ' + err.message;
-    })
-    .doLogin(username, password);
+  })
+  .then(response => {
+    // Karena no-cors, response tidak bisa dibaca
+    // Kita perlu menggunakan pendekatan alternatif
+    return handleLoginWithRedirect(username, password);
+  })
+  .then(result => {
+    if (result && result.success) {
+      currentUser = result;
+      currentRole = result.role;
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('userNameDisplay').textContent = result.nama || result.username;
+      document.getElementById('userRoleDisplay').textContent = result.role;
+      initApp();
+    } else {
+      errorEl.textContent = result?.message || 'Login gagal';
+    }
+  })
+  .catch(err => {
+    errorEl.textContent = 'Terjadi kesalahan: ' + err.message;
+  });
+  
   return false;
+}
+
+// Fungsi alternatif untuk login menggunakan iframe
+function handleLoginWithRedirect(username, password) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'loginFrame';
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = 'loginFrame';
+    form.style.display = 'none';
+    
+    const data = {
+      action: 'doLogin',
+      params: [username, password]
+    };
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'data';
+    input.value = JSON.stringify(data);
+    form.appendChild(input);
+    
+    let resolved = false;
+    
+    iframe.onload = function() {
+      try {
+        const content = iframe.contentWindow.document.body.textContent;
+        const result = JSON.parse(content);
+        resolved = true;
+        resolve(result);
+      } catch (e) {
+        if (!resolved) {
+          reject(e);
+        }
+      }
+      document.body.removeChild(iframe);
+      document.body.removeChild(form);
+    };
+    
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
+    
+    // Timeout jika terlalu lama
+    setTimeout(() => {
+      if (!resolved) {
+        reject(new Error('Login timeout'));
+        document.body.removeChild(iframe);
+        document.body.removeChild(form);
+      }
+    }, 10000);
+  });
 }
 
 function doLogout() {
@@ -91,11 +239,11 @@ function switchTab(tabId) {
 // ============================================================
 function loadAllData() {
   // Inisialisasi system jika perlu
-  google.script.run
-    .withSuccessHandler(function(res) {
+  callApi('initSystem')
+    .then(res => {
       console.log('System init:', res);
     })
-    .initSystem();
+    .catch(err => console.error('Init error:', err));
   
   loadDashboard();
   loadInputForm();
@@ -117,29 +265,122 @@ function showToast(message, type = 'info') {
 }
 
 // ============================================================
+// FUNGSI CALL API DENGAN IFRAME (Solusi untuk no-cors)
+// ============================================================
+function callApiWithIframe(action, params = []) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'apiFrame_' + Date.now();
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = iframe.name;
+    form.style.display = 'none';
+    
+    const data = {
+      action: action,
+      params: params
+    };
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'data';
+    input.value = JSON.stringify(data);
+    form.appendChild(input);
+    
+    let resolved = false;
+    
+    iframe.onload = function() {
+      try {
+        const content = iframe.contentWindow.document.body.textContent;
+        if (content) {
+          const result = JSON.parse(content);
+          resolved = true;
+          resolve(result);
+        }
+      } catch (e) {
+        if (!resolved) {
+          // Coba cek lagi setelah delay
+          setTimeout(() => {
+            try {
+              const content = iframe.contentWindow.document.body.textContent;
+              if (content) {
+                const result = JSON.parse(content);
+                resolved = true;
+                resolve(result);
+              }
+            } catch (e2) {
+              if (!resolved) {
+                reject(new Error('Gagal membaca response'));
+              }
+            }
+          }, 500);
+        }
+      }
+      
+      // Hapus iframe dan form setelah selesai
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        if (document.body.contains(form)) {
+          document.body.removeChild(form);
+        }
+      }, 1000);
+    };
+    
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
+    
+    // Timeout jika terlalu lama
+    setTimeout(() => {
+      if (!resolved) {
+        reject(new Error('Request timeout'));
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        if (document.body.contains(form)) {
+          document.body.removeChild(form);
+        }
+      }
+    }, 15000);
+  });
+}
+
+// ============================================================
 // DASHBOARD
 // ============================================================
 function loadDashboard() {
-  google.script.run
-    .withSuccessHandler(function(data) {
+  const statsEl = document.getElementById('dashboardStats');
+  statsEl.innerHTML = '<div class="loading">Memuat data dashboard...</div>';
+  
+  callApiWithIframe('getDashboardStats')
+    .then(data => {
+      if (!data) {
+        throw new Error('Data tidak valid');
+      }
+      
       // Stats
-      document.getElementById('statSiswa').textContent = data.siswa.length;
-      document.getElementById('statViolations').textContent = data.totalViolations;
-      document.getElementById('statAchievements').textContent = data.totalAchievements;
-      document.getElementById('statKelas').textContent = Object.keys(data.perKelas).length;
+      document.getElementById('statSiswa').textContent = data.siswa?.length || 0;
+      document.getElementById('statViolations').textContent = data.totalViolations || 0;
+      document.getElementById('statAchievements').textContent = data.totalAchievements || 0;
+      document.getElementById('statKelas').textContent = Object.keys(data.perKelas || {}).length;
       
       // Top 5
       const tbody = document.getElementById('top5Table');
       tbody.innerHTML = '';
-      data.siswaTerbanyak.forEach((d, i) => {
+      (data.siswaTerbanyak || []).forEach((d, i) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${i+1}</td>
-          <td>${d.nama}</td>
-          <td>${d.kelas}</td>
-          <td>${d.totalPelanggaran}</td>
-          <td>${d.totalPrestasi}</td>
-          <td style="font-weight:700;color:${d.total > 50 ? '#dc2626' : '#16a34a'}">${d.total}</td>
+          <td>${d.nama || '-'}</td>
+          <td>${d.kelas || '-'}</td>
+          <td>${d.totalPelanggaran || 0}</td>
+          <td>${d.totalPrestasi || 0}</td>
+          <td style="font-weight:700;color:${d.total > 50 ? '#dc2626' : '#16a34a'}">${d.total || 0}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -147,25 +388,30 @@ function loadDashboard() {
       // Kelas stats
       const ktBody = document.getElementById('kelasStatsTable');
       ktBody.innerHTML = '';
-      Object.keys(data.perKelas).forEach(k => {
+      Object.keys(data.perKelas || {}).forEach(k => {
         const d = data.perKelas[k];
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${k}</td>
-          <td>${d.count}</td>
+          <td>${d.count || 0}</td>
           <td>${d.count > 0 ? (d.total / d.count).toFixed(1) : 0}</td>
-          <td>${d.max}</td>
+          <td>${d.max || 0}</td>
         `;
         ktBody.appendChild(tr);
       });
       
-      // Chart - Tren tahunan (simulasi berdasarkan data)
+      // Chart
       updateChart(data);
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       showToast('Gagal load dashboard: ' + err.message, 'error');
-    })
-    .getDashboardStats();
+      statsEl.innerHTML = `
+        <div class="stat-card"><div class="number" id="statSiswa">0</div><div class="label">Total Siswa</div></div>
+        <div class="stat-card danger"><div class="number" id="statViolations">0</div><div class="label">Pelanggaran</div></div>
+        <div class="stat-card success"><div class="number" id="statAchievements">0</div><div class="label">Prestasi</div></div>
+        <div class="stat-card"><div class="number" id="statKelas">0</div><div class="label">Kelas</div></div>
+      `;
+    });
 }
 
 function updateChart(data) {
@@ -228,18 +474,18 @@ function loadInputForm() {
   document.getElementById('poinTanggal').value = today;
   
   // Load kelas
-  google.script.run
-    .withSuccessHandler(function(classes) {
+  callApiWithIframe('getClasses')
+    .then(classes => {
       const sel = document.getElementById('poinKelas');
       sel.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-      classes.forEach(c => {
+      (classes || []).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c;
         opt.textContent = c;
         sel.appendChild(opt);
       });
     })
-    .getClasses();
+    .catch(err => console.error('Gagal load kelas:', err));
   
   // Load kategori
   loadKategori();
@@ -248,11 +494,11 @@ function loadInputForm() {
 
 function loadKategori() {
   const jenis = document.getElementById('poinJenis').value;
-  google.script.run
-    .withSuccessHandler(function(categories) {
+  callApiWithIframe('getCategories', [jenis])
+    .then(categories => {
       const sel = document.getElementById('poinKategori');
       sel.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-      categories.forEach(c => {
+      (categories || []).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.nama;
         opt.dataset.poin = c.poin;
@@ -260,7 +506,7 @@ function loadKategori() {
         sel.appendChild(opt);
       });
     })
-    .getCategories(jenis);
+    .catch(err => console.error('Gagal load kategori:', err));
 }
 
 function updatePoinOtomatis() {
@@ -276,9 +522,9 @@ function loadSiswaByKelas() {
   sel.innerHTML = '<option value="">-- Pilih Siswa --</option>';
   if (!kelas) return;
   
-  google.script.run
-    .withSuccessHandler(function(students) {
-      students.forEach(s => {
+  callApiWithIframe('getStudentsByClass', [kelas])
+    .then(students => {
+      (students || []).forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.NIS;
         opt.textContent = s.Nama + ' (' + s.NIS + ')';
@@ -287,7 +533,7 @@ function loadSiswaByKelas() {
         sel.appendChild(opt);
       });
     })
-    .getStudentsByClass(kelas);
+    .catch(err => console.error('Gagal load siswa:', err));
 }
 
 function submitPoin(e) {
@@ -323,19 +569,18 @@ function submitPoin(e) {
     const reader = new FileReader();
     reader.onload = function(e) {
       const base64 = e.target.result;
-      google.script.run
-        .withSuccessHandler(function(uploadResult) {
-          if (uploadResult.success) {
+      callApiWithIframe('uploadFile', [base64, fileInput.files[0].name])
+        .then(uploadResult => {
+          if (uploadResult && uploadResult.success) {
             data.fotoUrl = uploadResult.url;
             savePoinData(data);
           } else {
-            msg.innerHTML = '<div class="alert alert-danger">Gagal upload foto: ' + uploadResult.error + '</div>';
+            msg.innerHTML = '<div class="alert alert-danger">Gagal upload foto: ' + (uploadResult?.error || '') + '</div>';
           }
         })
-        .withFailureHandler(function(err) {
+        .catch(err => {
           msg.innerHTML = '<div class="alert alert-danger">Gagal upload foto: ' + err.message + '</div>';
-        })
-        .uploadFile(base64, fileInput.files[0].name);
+        });
     };
     reader.readAsDataURL(fileInput.files[0]);
   } else {
@@ -350,9 +595,11 @@ function submitPoin(e) {
 // ============================================================
 function savePoinData(data) {
   const msg = document.getElementById('poinFormMessage');
-  google.script.run
-    .withSuccessHandler(function(result) {
-      if (result.success) {
+  msg.innerHTML = '<div class="loading">Menyimpan data...</div>';
+  
+  callApiWithIframe('savePoin', [data])
+    .then(result => {
+      if (result && result.success) {
         msg.innerHTML = '<div class="alert alert-success">✅ Poin berhasil tersimpan!</div>';
         showToast('Poin berhasil tersimpan!', 'success');
         
@@ -371,19 +618,18 @@ function savePoinData(data) {
         loadRiwayat();
         loadDashboard();
       } else {
-        msg.innerHTML = '<div class="alert alert-danger">Gagal menyimpan: ' + (result.message || '') + '</div>';
+        msg.innerHTML = '<div class="alert alert-danger">Gagal menyimpan: ' + (result?.message || '') + '</div>';
       }
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       msg.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
-    })
-    .savePoin(data);
+    });
 }
 
 function loadRiwayat() {
-  google.script.run
-    .withSuccessHandler(function(data) {
-      const all = [...data.violations, ...data.achievements];
+  callApiWithIframe('getAllPoin')
+    .then(data => {
+      const all = [...(data?.violations || []), ...(data?.achievements || [])];
       all.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
       const tbody = document.getElementById('riwayatTable');
       tbody.innerHTML = '';
@@ -402,10 +648,9 @@ function loadRiwayat() {
         tbody.appendChild(tr);
       });
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       showToast('Gagal load riwayat: ' + err.message, 'error');
-    })
-    .getAllPoin();
+    });
 }
 
 // ============================================================
@@ -500,23 +745,23 @@ function showMasterTab(tab) {
 
 // ---- MASTER: SISWA ----
 function loadMasterSiswa() {
-  google.script.run
-    .withSuccessHandler(function(data) {
+  callApiWithIframe('getStudents')
+    .then(data => {
       const tbody = document.getElementById('masterSiswaTable');
       tbody.innerHTML = '';
-      data.forEach(d => {
+      (data || []).forEach(d => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${d.NIS}</td>
-          <td>${d.Nama}</td>
-          <td>${d.Kelas}</td>
-          <td>${d.JK}</td>
+          <td>${d.NIS || ''}</td>
+          <td>${d.Nama || ''}</td>
+          <td>${d.Kelas || ''}</td>
+          <td>${d.JK || ''}</td>
           <td><button class="btn btn-danger btn-sm" onclick="deleteMasterSiswa('${d.NIS}')">Hapus</button></td>
         `;
         tbody.appendChild(tr);
       });
     })
-    .getStudents();
+    .catch(err => showToast('Gagal load siswa: ' + err.message, 'error'));
 }
 
 function saveMasterSiswa(e) {
@@ -527,35 +772,35 @@ function saveMasterSiswa(e) {
     Kelas: document.getElementById('mKelas').value.trim(),
     JK: document.getElementById('mJK').value
   };
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('saveStudent', [data])
+    .then(() => {
       showToast('Siswa berhasil disimpan!', 'success');
       loadMasterSiswa();
       document.getElementById('mNIS').value = '';
       document.getElementById('mNama').value = '';
       document.getElementById('mKelas').value = '';
     })
-    .saveStudent(data);
+    .catch(err => showToast('Gagal simpan: ' + err.message, 'error'));
   return false;
 }
 
 function deleteMasterSiswa(nis) {
   if (!confirm('Hapus siswa ini?')) return;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('deleteStudent', [nis])
+    .then(() => {
       showToast('Siswa dihapus!', 'success');
       loadMasterSiswa();
     })
-    .deleteStudent(nis);
+    .catch(err => showToast('Gagal hapus: ' + err.message, 'error'));
 }
 
 // ---- MASTER: KELAS ----
 function loadMasterKelas() {
-  google.script.run
-    .withSuccessHandler(function(data) {
+  callApiWithIframe('getClasses')
+    .then(data => {
       const tbody = document.getElementById('masterKelasTable');
       tbody.innerHTML = '';
-      data.forEach(d => {
+      (data || []).forEach(d => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${d}</td>
@@ -564,63 +809,56 @@ function loadMasterKelas() {
         tbody.appendChild(tr);
       });
     })
-    .getClasses();
+    .catch(err => showToast('Gagal load kelas: ' + err.message, 'error'));
 }
 
 function saveMasterKelas(e) {
   e.preventDefault();
   const name = document.getElementById('mKelasName').value.trim();
   if (!name) return false;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('saveClass', [name])
+    .then(() => {
       showToast('Kelas berhasil ditambahkan!', 'success');
       loadMasterKelas();
       document.getElementById('mKelasName').value = '';
     })
-    .saveClass(name);
+    .catch(err => showToast('Gagal simpan: ' + err.message, 'error'));
   return false;
 }
 
 function deleteMasterKelas(name) {
   if (!confirm('Hapus kelas ini?')) return;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('deleteClass', [name])
+    .then(() => {
       showToast('Kelas dihapus!', 'success');
       loadMasterKelas();
     })
-    .deleteClass(name);
+    .catch(err => showToast('Gagal hapus: ' + err.message, 'error'));
 }
 
 // ---- MASTER: KATEGORI ----
 function loadMasterKategori() {
-  const pelanggaran = [];
-  const prestasi = [];
-  google.script.run
-    .withSuccessHandler(function(data) {
+  Promise.all([
+    callApiWithIframe('getCategories', ['pelanggaran']),
+    callApiWithIframe('getCategories', ['prestasi'])
+  ])
+    .then(([pelanggaran, prestasi]) => {
       const tbody = document.getElementById('masterKategoriTable');
       tbody.innerHTML = '';
-      google.script.run
-        .withSuccessHandler(function(pel) {
-          google.script.run
-            .withSuccessHandler(function(pre) {
-              const all = [...pel, ...pre];
-              all.forEach(d => {
-                const tr = document.createElement('tr');
-                const jenis = d.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi';
-                tr.innerHTML = `
-                  <td>${jenis}</td>
-                  <td>${d.nama}</td>
-                  <td>${d.poin}</td>
-                  <td><button class="btn btn-danger btn-sm" onclick="deleteMasterKategori('${d.type}','${d.nama}')">Hapus</button></td>
-                `;
-                tbody.appendChild(tr);
-              });
-            })
-            .getCategories('prestasi');
-        })
-        .getCategories('pelanggaran');
+      const all = [...(pelanggaran || []), ...(prestasi || [])];
+      all.forEach(d => {
+        const tr = document.createElement('tr');
+        const jenis = d.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi';
+        tr.innerHTML = `
+          <td>${jenis}</td>
+          <td>${d.nama || ''}</td>
+          <td>${d.poin || 0}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteMasterKategori('${d.type}','${d.nama}')">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
     })
-    .getCategories('pelanggaran');
+    .catch(err => showToast('Gagal load kategori: ' + err.message, 'error'));
 }
 
 function saveMasterKategori(e) {
@@ -629,45 +867,45 @@ function saveMasterKategori(e) {
   const nama = document.getElementById('mKatNama').value.trim();
   const poin = parseInt(document.getElementById('mKatPoin').value) || 0;
   if (!nama) return false;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('saveCategory', [type, nama, poin])
+    .then(() => {
       showToast('Kategori berhasil ditambahkan!', 'success');
       loadMasterKategori();
       document.getElementById('mKatNama').value = '';
       document.getElementById('mKatPoin').value = '';
     })
-    .saveCategory(type, nama, poin);
+    .catch(err => showToast('Gagal simpan: ' + err.message, 'error'));
   return false;
 }
 
 function deleteMasterKategori(type, nama) {
   if (!confirm('Hapus kategori ini?')) return;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('deleteCategory', [type, nama])
+    .then(() => {
       showToast('Kategori dihapus!', 'success');
       loadMasterKategori();
     })
-    .deleteCategory(type, nama);
+    .catch(err => showToast('Gagal hapus: ' + err.message, 'error'));
 }
 
 // ---- MASTER: USER ----
 function loadMasterUser() {
-  google.script.run
-    .withSuccessHandler(function(data) {
+  callApiWithIframe('getUsers')
+    .then(data => {
       const tbody = document.getElementById('masterUserTable');
       tbody.innerHTML = '';
-      data.forEach(d => {
+      (data || []).forEach(d => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${d.username}</td>
-          <td>${d.nama}</td>
-          <td><span class="role-badge">${d.role}</span></td>
+          <td>${d.username || ''}</td>
+          <td>${d.nama || ''}</td>
+          <td><span class="role-badge">${d.role || ''}</span></td>
           <td><button class="btn btn-danger btn-sm" onclick="deleteMasterUser('${d.username}')">Hapus</button></td>
         `;
         tbody.appendChild(tr);
       });
     })
-    .getUsers();
+    .catch(err => showToast('Gagal load user: ' + err.message, 'error'));
 }
 
 function saveMasterUser(e) {
@@ -682,26 +920,26 @@ function saveMasterUser(e) {
     showToast('Username dan password wajib diisi!', 'error');
     return false;
   }
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('saveUser', [data])
+    .then(() => {
       showToast('User berhasil disimpan!', 'success');
       loadMasterUser();
       document.getElementById('mUserUsername').value = '';
       document.getElementById('mUserPassword').value = '';
       document.getElementById('mUserNama').value = '';
     })
-    .saveUser(data);
+    .catch(err => showToast('Gagal simpan: ' + err.message, 'error'));
   return false;
 }
 
 function deleteMasterUser(username) {
   if (!confirm('Hapus user ini?')) return;
-  google.script.run
-    .withSuccessHandler(function() {
+  callApiWithIframe('deleteUser', [username])
+    .then(() => {
       showToast('User dihapus!', 'success');
       loadMasterUser();
     })
-    .deleteUser(username);
+    .catch(err => showToast('Gagal hapus: ' + err.message, 'error'));
 }
 
 // ============================================================
@@ -709,52 +947,53 @@ function deleteMasterUser(username) {
 // ============================================================
 function loadLaporan() {
   // Load kelas untuk filter
-  google.script.run
-    .withSuccessHandler(function(classes) {
+  callApiWithIframe('getClasses')
+    .then(classes => {
       const sel = document.getElementById('laporanKelas');
       sel.innerHTML = '<option value="Semua">Semua Kelas</option>';
-      classes.forEach(c => {
+      (classes || []).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c;
         opt.textContent = c;
         sel.appendChild(opt);
       });
     })
-    .getClasses();
+    .catch(err => console.error('Gagal load kelas filter:', err));
   
   refreshLaporan();
 }
 
 function refreshLaporan() {
   const filter = document.getElementById('laporanKelas').value;
-  google.script.run
-    .withSuccessHandler(function(data) {
-      let filtered = data.siswa;
+  callApiWithIframe('getDashboardStats')
+    .then(data => {
+      let filtered = data?.siswa || [];
       if (filter && filter !== 'Semua') {
         filtered = filtered.filter(d => d.kelas === filter);
       }
       const tbody = document.getElementById('laporanTable');
       tbody.innerHTML = '';
-      filtered.sort((a, b) => b.total - a.total);
+      filtered.sort((a, b) => (b.total || 0) - (a.total || 0));
       filtered.forEach((d, i) => {
         const tr = document.createElement('tr');
         let status = 'Normal';
         let statusClass = '';
-        if (d.total >= 100) { status = '⚠️ Segera ke BK'; statusClass = 'danger'; }
-        else if (d.total > 50) { status = '⚠️ Lapor Wali Kelas'; statusClass = 'warning'; }
+        const total = d.total || 0;
+        if (total >= 100) { status = '⚠️ Segera ke BK'; statusClass = 'danger'; }
+        else if (total > 50) { status = '⚠️ Lapor Wali Kelas'; statusClass = 'warning'; }
         tr.innerHTML = `
           <td>${i+1}</td>
-          <td>${d.nama}</td>
-          <td>${d.kelas}</td>
-          <td>${d.totalPelanggaran}</td>
-          <td>${d.totalPrestasi}</td>
-          <td style="font-weight:700;color:${d.total > 50 ? '#dc2626' : '#16a34a'}">${d.total}</td>
+          <td>${d.nama || '-'}</td>
+          <td>${d.kelas || '-'}</td>
+          <td>${d.totalPelanggaran || 0}</td>
+          <td>${d.totalPrestasi || 0}</td>
+          <td style="font-weight:700;color:${total > 50 ? '#dc2626' : '#16a34a'}">${total}</td>
           <td class="${statusClass}">${status}</td>
         `;
         tbody.appendChild(tr);
       });
     })
-    .getDashboardStats();
+    .catch(err => showToast('Gagal refresh laporan: ' + err.message, 'error'));
 }
 
 function cetakLaporan() {
@@ -762,9 +1001,9 @@ function cetakLaporan() {
   const msg = document.getElementById('laporanMessage');
   msg.innerHTML = '<div class="loading">Membuat PDF...</div>';
   
-  google.script.run
-    .withSuccessHandler(function(result) {
-      if (result.success) {
+  callApiWithIframe('generateReport', [filter])
+    .then(result => {
+      if (result && result.success) {
         msg.innerHTML = `
           <div class="alert alert-success">
             ✅ PDF berhasil dibuat! <a href="${result.url}" target="_blank">Buka PDF</a>
@@ -772,13 +1011,12 @@ function cetakLaporan() {
         `;
         showToast('PDF siap!', 'success');
       } else {
-        msg.innerHTML = '<div class="alert alert-danger">Gagal membuat PDF: ' + (result.message || '') + '</div>';
+        msg.innerHTML = '<div class="alert alert-danger">Gagal membuat PDF: ' + (result?.message || '') + '</div>';
       }
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       msg.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
-    })
-    .generateReport(filter);
+    });
 }
 
 // Event listener untuk filter laporan
@@ -795,74 +1033,78 @@ function loadSiswaView() {
   if (!currentUser) return;
   
   const nis = currentUser.username;
-  google.script.run
-    .withSuccessHandler(function(student) {
+  
+  callApiWithIframe('getStudentByNis', [nis])
+    .then(student => {
       if (!student) {
         document.getElementById('siswaInfo').innerHTML = '<div class="alert alert-warning">Data siswa tidak ditemukan. Hubungi admin.</div>';
         return;
       }
       
       document.getElementById('siswaInfo').innerHTML = `
-        <p><strong>Nama:</strong> ${student.Nama}</p>
-        <p><strong>NIS:</strong> ${student.NIS}</p>
-        <p><strong>Kelas:</strong> ${student.Kelas}</p>
+        <p><strong>Nama:</strong> ${student.Nama || '-'}</p>
+        <p><strong>NIS:</strong> ${student.NIS || '-'}</p>
+        <p><strong>Kelas:</strong> ${student.Kelas || '-'}</p>
       `;
       
-      google.script.run
-        .withSuccessHandler(function(poinData) {
-          let totalPelanggaran = 0;
-          let totalPrestasi = 0;
-          const riwayat = [];
-          
-          poinData.forEach(p => {
-            const poinVal = parseInt(p.Poin) || 0;
-            if (p.type === 'pelanggaran') {
-              totalPelanggaran += poinVal;
-            } else {
-              totalPrestasi += poinVal;
-            }
-            riwayat.push({
-              tanggal: p.Tanggal || '-',
-              jenis: p.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi',
-              kategori: p.Kategori || '-',
-              poin: poinVal,
-              keterangan: p.Keterangan || '-'
-            });
-          });
-          
-          const totalAkhir = totalPelanggaran - totalPrestasi;
-          document.getElementById('siswaTotalPelanggaran').textContent = totalPelanggaran;
-          document.getElementById('siswaTotalPrestasi').textContent = totalPrestasi;
-          document.getElementById('siswaTotalAkhir').textContent = totalAkhir;
-          
-          const warningEl = document.getElementById('siswaPeringatan');
-          warningEl.innerHTML = '';
-          if (totalAkhir >= 100) {
-            warningEl.innerHTML = '<div class="alert alert-danger">⚠️ PERINGATAN KERAS! Poin Anda mencapai batas maksimal (100). Segera temui Guru BK atau Wali Kelas!</div>';
-          } else if (totalAkhir > 50) {
-            warningEl.innerHTML = '<div class="alert alert-warning">⚠️ Perhatian! Poin Anda melebihi 50. Silakan melapor kepada Wali Kelas.</div>';
-          } else {
-            warningEl.innerHTML = '<div class="alert alert-success">✅ Poin Anda dalam batas normal. Tetap jaga disiplin!</div>';
-          }
-          
-          const tbody = document.getElementById('siswaRiwayatTable');
-          tbody.innerHTML = '';
-          riwayat.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
-          riwayat.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${r.tanggal}</td>
-              <td>${r.jenis}</td>
-              <td>${r.kategori}</td>
-              <td style="font-weight:700;color:${r.jenis.includes('Pelanggaran') ? '#dc2626' : '#16a34a'}">${r.poin}</td>
-              <td>${r.keterangan}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        })
-        .getPoinByNis(nis);
+      return callApiWithIframe('getPoinByNis', [nis]);
     })
-    .getStudentByNis(nis);
+    .then(poinData => {
+      if (!poinData) return;
+      
+      let totalPelanggaran = 0;
+      let totalPrestasi = 0;
+      const riwayat = [];
+      
+      (poinData || []).forEach(p => {
+        const poinVal = parseInt(p.Poin) || 0;
+        if (p.type === 'pelanggaran') {
+          totalPelanggaran += poinVal;
+        } else {
+          totalPrestasi += poinVal;
+        }
+        riwayat.push({
+          tanggal: p.Tanggal || '-',
+          jenis: p.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi',
+          kategori: p.Kategori || '-',
+          poin: poinVal,
+          keterangan: p.Keterangan || '-'
+        });
+      });
+      
+      const totalAkhir = totalPelanggaran - totalPrestasi;
+      document.getElementById('siswaTotalPelanggaran').textContent = totalPelanggaran;
+      document.getElementById('siswaTotalPrestasi').textContent = totalPrestasi;
+      document.getElementById('siswaTotalAkhir').textContent = totalAkhir;
+      
+      const warningEl = document.getElementById('siswaPeringatan');
+      warningEl.innerHTML = '';
+      if (totalAkhir >= 100) {
+        warningEl.innerHTML = '<div class="alert alert-danger">⚠️ PERINGATAN KERAS! Poin Anda mencapai batas maksimal (100). Segera temui Guru BK atau Wali Kelas!</div>';
+      } else if (totalAkhir > 50) {
+        warningEl.innerHTML = '<div class="alert alert-warning">⚠️ Perhatian! Poin Anda melebihi 50. Silakan melapor kepada Wali Kelas.</div>';
+      } else {
+        warningEl.innerHTML = '<div class="alert alert-success">✅ Poin Anda dalam batas normal. Tetap jaga disiplin!</div>';
+      }
+      
+      const tbody = document.getElementById('siswaRiwayatTable');
+      tbody.innerHTML = '';
+      riwayat.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+      riwayat.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.tanggal}</td>
+          <td>${r.jenis}</td>
+          <td>${r.kategori}</td>
+          <td style="font-weight:700;color:${r.jenis.includes('Pelanggaran') ? '#dc2626' : '#16a34a'}">${r.poin}</td>
+          <td>${r.keterangan}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => {
+      showToast('Gagal load data siswa: ' + err.message, 'error');
+    });
 }
 
 // ============================================================
