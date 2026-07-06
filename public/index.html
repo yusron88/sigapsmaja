@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGAP - SMA Negeri Jatirogo</title>
+  
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<link rel="icon" href="https://sigapsmaja.vercel.app/favicon.ico">
+
+<link rel="apple-touch-icon"
+      href="https://sigapsmaja.vercel.app/apple-touch-icon.png">
+
+<link rel="manifest"
+      href="https://sigapsmaja.vercel.app/manifest.json">
+  <style>
+    /* ============================================================
+   ROOT VARIABLES (Neumorphic Palette)
+   ============================================================ */
+:root {
+  --bg-body: #e4ebf5;
+  --bg-card: #e4ebf5;          /* sama dengan body agar menyatu */
+  --text-primary: #2d4059;
+  --text-secondary: #6a7a8e;
+  --text-muted: #8899aa;
+  --accent: #4a6a8a;
+  --accent-light: #5a7f9e;
+  --shadow-light: rgba(255, 255, 255, 0.8);
+  --shadow-dark: rgba(174, 190, 205, 0.5);
+  --shadow-dark-strong: rgba(174, 190, 205, 0.7);
+  --radius-card: 32px;
+  --radius-input: 60px;
+  --radius-btn: 60px;
+  --radius-sm: 12px;
+  --transition: 0.25s ease;
+  --font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+/* ============================================================
+   INPUT DENGAN IKON (Neumorphic)
+   ============================================================ */
+.input-icon {
+  position: relative;
+  margin: 8px 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-input);
+  box-shadow:
+    inset 6px 6px 14px var(--shadow-dark),
+    inset -6px -6px 14px var(--shadow-light);
+  transition: box-shadow var(--transition);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.input-icon:focus-within {
+  box-shadow:
+    inset 8px 8px 18px var(--shadow-dark-strong),
+    inset -8px -8px 18px var(--shadow-light);
+}
+
+.input-icon i {
+  color: var(--text-muted);
+  font-size: 16px;
+  margin-right: 14px;
+  transition: color var(--transition);
+}
+
+.input-icon:focus-within i {
+  color: var(--accent);
+}
+
+.input-icon input {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+  box-shadow: none !important; /* hilangkan inset dari input asli */
+}
+
+.input-icon input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Hapus style input asli yang bentrok */
+.login-card input {
+  /* kita tidak pakai lagi, karena sudah di-wrapper */
+  box-shadow: none !important;
+  margin: 0;
+  padding: 14px 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ============================================================
+   LOGIN PAGE (Neumorphic Card)
+   ============================================================ */
+#loginPage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: var(--bg-body);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--bg-card);
+  padding: 44px 36px 40px;
+  border-radius: var(--radius-card);
+  width: 100%;
+  max-width: 400px;
+  box-shadow:
+    12px 12px 24px var(--shadow-dark),
+    -12px -12px 24px var(--shadow-light);
+  transition: box-shadow var(--transition);
+  animation: neumorphFade 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.login-card:hover {
+  box-shadow:
+    16px 16px 32px var(--shadow-dark-strong),
+    -16px -16px 32px var(--shadow-light);
+}
+
+/* ============================================================
+   PERBAIKAN LOGO LOGIN PAGE
+   ============================================================ */
+.login-card .logo {
+  text-align: center;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-card .logo img {
+  width: 100px;         /* Membatasi lebar logo agar proporsional */
+  height: 100px;        /* Membuat rasio kotak yang pas */
+  object-fit: contain;  /* Memastikan gambar tidak gepeng/terdistorsi */
+  margin-bottom: 16px;
+  /* Opsional: Beri efek bayangan halus khas neumorphic jika diinginkan */
+  filter: drop-shadow(4px 4px 8px var(--shadow-dark)); 
+}
+
+.login-card .logo h1 {
+  font-size: 26px;      /* Sedikit dikecilkan agar lebih clean */
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.login-card .logo p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: var(--radius-input);
+  background: var(--bg-card);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow:
+    inset 6px 6px 14px var(--shadow-dark),
+    inset -6px -6px 14px var(--shadow-light);
+  transition: box-shadow var(--transition);
+}
+
+.login-card input:focus {
+  box-shadow:
+    inset 8px 8px 18px var(--shadow-dark-strong),
+    inset -8px -8px 18px var(--shadow-light);
+  outline: none;
+}
+
+.login-card input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ============================================================
+   PERBAIKAN WARNA TOMBOL LOGIN (BIRU NEUMORPHIC)
+   ============================================================ */
+.login-card button {
+  width: 100%;
+  padding: 16px 0;
+  margin-top: 16px;
+  border: none;
+  border-radius: var(--radius-btn);
+  
+  /* Menggunakan warna biru cerah sesuai gambar */
+  background: #52b7d8; 
+  color: #ffffff; /* Mengubah warna teks menjadi putih agar kontras */
+  
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  
+  /* Bayangan disesuaikan agar efek soft neumorphic tetap terasa di background biru */
+  box-shadow:
+    6px 6px 16px rgba(138, 180, 200, 0.7),
+    -6px -6px 16px rgba(255, 255, 255, 0.9);
+}
+
+/* Efek saat kursor diarahkan ke tombol (Hover) */
+.login-card button:hover {
+  background: #46a9ca; /* Warna biru sedikit lebih gelap saat dihover */
+  box-shadow:
+    4px 4px 12px rgba(138, 180, 200, 0.8),
+    -4px -4px 12px rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+/* Efek saat tombol diklik (Pressed/Active) */
+.login-card button:active {
+  box-shadow:
+    inset 4px 4px 10px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 10px rgba(255, 255, 255, 0.2);
+  transform: translateY(2px);
+}
+
+.login-card .error {
+  color: #c75b5b;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 22px;
+}
+
+/* ============================================================
+   MAIN APP WRAPPER
+   ============================================================ */
+#app {
+  display: none;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ============================================================
+   HEADER (Neumorphic)
+   ============================================================ */
+.app-header {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  box-shadow:
+    6px 6px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-header .brand h1 {
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.app-header .brand span {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.app-header .user-info .role-badge {
+  background: transparent;
+  color: var(--text-primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  box-shadow:
+    inset 3px 3px 8px var(--shadow-dark),
+    inset -3px -3px 8px var(--shadow-light);
+}
+
+.app-header .user-info button {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: none;
+  padding: 6px 16px;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light);
+  transition: all var(--transition);
+}
+
+.app-header .user-info button:hover {
+  box-shadow:
+    2px 2px 6px var(--shadow-dark),
+    -2px -2px 6px var(--shadow-light);
+  transform: translateY(-1px);
+}
+
+.app-header .user-info button:active {
+  box-shadow:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+  transform: translateY(1px);
+}
+
+/* ============================================================
+   NAVIGATION TABS
+   ============================================================ */
+.nav-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  margin-bottom: 24px;
+  box-shadow:
+    6px 6px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light);
+  flex-wrap: wrap;
+}
+
+.nav-tabs button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  font-size: 14px;
+}
+
+.nav-tabs button:hover {
+  background: rgba(174, 190, 205, 0.15);
+  color: var(--text-primary);
+}
+
+.nav-tabs button.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+}
+
+/* ============================================================
+   PANELS (cards)
+   ============================================================ */
+.panel {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.panel.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow:
+    8px 8px 18px var(--shadow-dark),
+    -8px -8px 18px var(--shadow-light);
+  transition: box-shadow var(--transition);
+}
+
+.card h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.card h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   STATS GRID
+   ============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 18px 16px;
+  text-align: center;
+  box-shadow:
+    6px 6px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light);
+  transition: box-shadow var(--transition);
+}
+
+.stat-card:hover {
+  box-shadow:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light);
+}
+
+.stat-card .number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-card .label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.stat-card.danger .number { color: #c75b5b; }
+.stat-card.success .number { color: #3d9e6a; }
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th {
+  background: rgba(174, 190, 205, 0.15);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(174, 190, 205, 0.2);
+}
+
+tr:hover td {
+  background: rgba(174, 190, 205, 0.05);
+}
+
+/* ============================================================
+   FORMS (Neumorphic inputs)
+   ============================================================ */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 18px;
+  border: none;
+  border-radius: var(--radius-input);
+  background: var(--bg-card);
+  font-size: 14px;
+  color: var(--text-primary);
+  box-shadow:
+    inset 6px 6px 14px var(--shadow-dark),
+    inset -6px -6px 14px var(--shadow-light);
+  transition: box-shadow var(--transition);
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  box-shadow:
+    inset 8px 8px 18px var(--shadow-dark-strong),
+    inset -8px -8px 18px var(--shadow-light);
+  outline: none;
+}
+
+.form-group textarea {
+  min-height: 60px;
+  resize: vertical;
+  border-radius: var(--radius-sm);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+/* ============================================================
+   BUTTONS (Neumorphic)
+   ============================================================ */
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow:
+    6px 6px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light);
+}
+
+.btn:hover {
+  box-shadow:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  box-shadow:
+    inset 6px 6px 14px var(--shadow-dark),
+    inset -6px -6px 14px var(--shadow-light);
+  transform: translateY(2px);
+}
+
+.btn-primary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.btn-success {
+  background: var(--bg-card);
+  color: #3d9e6a;
+}
+
+.btn-danger {
+  background: var(--bg-card);
+  color: #c75b5b;
+}
+
+.btn-warning {
+  background: var(--bg-card);
+  color: #b8860b;
+}
+
+.btn-outline {
+  background: transparent;
+  box-shadow: none;
+  border: 2px solid rgba(174, 190, 205, 0.3);
+}
+.btn-outline:hover {
+  background: rgba(174, 190, 205, 0.1);
+  transform: none;
+}
+
+.btn-sm {
+  padding: 6px 16px;
+  font-size: 12px;
+  border-radius: 40px;
+}
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+.alert {
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  margin: 10px 0;
+  font-weight: 500;
+  background: var(--bg-card);
+  box-shadow:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+}
+
+.alert-warning {
+  color: #b8860b;
+  border-left: 4px solid #b8860b;
+}
+
+.alert-danger {
+  color: #c75b5b;
+  border-left: 4px solid #c75b5b;
+}
+
+.alert-success {
+  color: #3d9e6a;
+  border-left: 4px solid #3d9e6a;
+}
+
+/* ============================================================
+   CHART CONTAINER
+   ============================================================ */
+.chart-container {
+  position: relative;
+  height: 280px;
+  max-width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  box-shadow:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 14px 24px;
+  border-radius: var(--radius-sm);
+  box-shadow:
+    10px 10px 30px var(--shadow-dark),
+    -10px -10px 30px var(--shadow-light);
+  font-weight: 500;
+  z-index: 9999;
+  animation: slideUp 0.4s ease;
+  max-width: 400px;
+}
+
+.toast.success { border-left: 4px solid #3d9e6a; }
+.toast.error { border-left: 4px solid #c75b5b; }
+.toast.warning { border-left: 4px solid #b8860b; }
+
+@keyframes slideUp {
+  from { transform: translateY(100px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================================
+   BADGE (poin)
+   ============================================================ */
+.poin-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--bg-card);
+  box-shadow:
+    inset 3px 3px 8px var(--shadow-dark),
+    inset -3px -3px 8px var(--shadow-light);
+}
+
+.poin-badge.normal { color: #3d9e6a; }
+.poin-badge.warning { color: #b8860b; }
+.poin-badge.danger { color: #c75b5b; }
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+.loading::after {
+  content: '...';
+  animation: dots 1.5s steps(4) infinite;
+}
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .app-header .user-info {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .nav-tabs button {
+    flex: 1;
+    min-width: 80px;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .login-card { padding: 30px 20px; }
+  .card { padding: 18px; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .login-card { padding: 24px 16px; border-radius: 28px; }
+  .login-card .logo h1 { font-size: 24px; }
+}
+
+/* ============================================================
+   HIDDEN
+   ============================================================ */
+.hidden { display: none !important; }
+
+/* ============================================================
+   ANIMASI LOGIN CARD
+   ============================================================ */
+@keyframes neumorphFade {
+  0% { opacity: 0; transform: scale(0.96) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+  </style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- LOGIN PAGE -->
+<!-- ============================================================ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="logo">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo SMA Negeri Jatirogo" onerror="this.style.display='none'">
+      <h1>SIGAP</h1>
+      <p>SMA Negeri Jatirogo</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 400;">Sistem Penilaian &amp; Penegakan Disiplin</p>
+    </div>
+    
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="input-icon">
+        <i class="fas fa-user"></i>
+        <input type="text" id="loginUsername" placeholder="Username" required>
+      </div>
+      
+      <div class="input-icon">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+      </div>
+      
+      <button type="submit">Login</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MAIN APP -->
+<!-- ============================================================ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo" onerror="this.style.display='none'" style="height:40px;">
+      <div>
+        <h1>SIGAP (Sistem Penilaian & Penegakan Disiplin)</h1>
+        <span>SMA Negeri Jatirogo</span>
+      </div>
+    </div>
+    <div class="user-info">
+      <span id="userNameDisplay">User</span>
+      <span class="role-badge" id="userRoleDisplay">siswa</span>
+      <button onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav class="nav-tabs" id="navTabs">
+    <button class="active" data-tab="dashboard">📊 Dashboard</button>
+    <button data-tab="input">✏️ Input Poin</button>
+    <button data-tab="master" id="tabMaster" class="hidden">📚 Master Data</button>
+    <button data-tab="laporan">📄 Laporan</button>
+    <button data-tab="siswaView" id="tabSiswaView">👤 Poin Saya</button>
+  </nav>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: DASHBOARD -->
+  <!-- ========================================================== -->
+  <div id="panelDashboard" class="panel active">
+    <div class="stats-grid" id="dashboardStats">
+      <div class="stat-card"><div class="number" id="statSiswa">0</div><div class="label">Total Siswa</div></div>
+      <div class="stat-card danger"><div class="number" id="statViolations">0</div><div class="label">Pelanggaran</div></div>
+      <div class="stat-card success"><div class="number" id="statAchievements">0</div><div class="label">Prestasi</div></div>
+      <div class="stat-card"><div class="number" id="statKelas">0</div><div class="label">Kelas</div></div>
+    </div>
+    
+    <div class="card">
+      <h2>📈 Tren Poin Tahunan</h2>
+      <div class="chart-container">
+        <canvas id="trenChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>🏆 Top 5 Siswa dengan Poin Tertinggi</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th></tr></thead>
+          <tbody id="top5Table"></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>📋 Statistik per Kelas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Kelas</th><th>Jumlah Siswa</th><th>Rata-rata Poin</th><th>Poin Tertinggi</th></tr></thead>
+          <tbody id="kelasStatsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: INPUT POIN -->
+  <!-- ========================================================== -->
+  <div id="panelInput" class="panel">
+    <div class="card">
+      <h2>✏️ Input Poin Baru</h2>
+      <form id="poinForm" onsubmit="return submitPoin(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanggal Kejadian</label>
+            <input type="date" id="poinTanggal" required>
+          </div>
+          <div class="form-group">
+            <label>Kelas</label>
+            <select id="poinKelas" onchange="loadSiswaByKelas()" required>
+              <option value="">-- Pilih Kelas --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Siswa</label>
+            <select id="poinSiswa" required>
+              <option value="">-- Pilih Siswa --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="poinKategori" onchange="updatePoinOtomatis()" required>
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Jenis</label>
+            <select id="poinJenis" onchange="loadKategori()" required>
+              <option value="pelanggaran">❌ Pelanggaran</option>
+              <option value="prestasi">🏆 Prestasi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Poin (otomatis)</label>
+            <input type="number" id="poinNilai" readonly style="background:#f1f5f9;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Keterangan Detail</label>
+          <textarea id="poinKeterangan" placeholder="Deskripsi kejadian..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Petugas Validasi</label>
+            <input type="text" id="poinPetugas" placeholder="Nama petugas">
+          </div>
+          <div class="form-group">
+            <label>Upload Foto (opsional)</label>
+            <input type="file" id="poinFoto" accept="image/*">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Simpan Poin</button>
+        <div id="poinFormMessage" style="margin-top:12px;"></div>
+      </form>
+    </div>
+    
+    <div class="card">
+      <h2>📜 Riwayat Poin Terbaru</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Siswa</th><th>Kelas</th><th>Jenis</th><th>Kategori</th><th>Poin</th></tr></thead>
+          <tbody id="riwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: MASTER DATA (Admin only) -->
+  <!-- ========================================================== -->
+  <div id="panelMaster" class="panel">
+    <div class="card">
+      <h2>📚 Master Data</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('siswa')">Siswa</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kelas')">Kelas</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kategori')">Kategori</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('user')">User</button>
+      </div>
+      <div id="masterContent">
+        <p>Pilih tab di atas untuk mengelola data.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: LAPORAN -->
+  <!-- ========================================================== -->
+  <div id="panelLaporan" class="panel">
+    <div class="card">
+      <h2>📄 Cetak Laporan</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Filter Kelas</label>
+          <select id="laporanKelas">
+            <option value="Semua">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-success" onclick="cetakLaporan()">🖨️ Cetak PDF</button>
+        </div>
+      </div>
+      <div id="laporanMessage" style="margin-top:12px;"></div>
+    </div>
+    <div class="card">
+      <h2>📊 Data Laporan</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="laporanTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: SISWA VIEW (Student only) -->
+  <!-- ========================================================== -->
+  <div id="panelSiswaView" class="panel">
+    <div class="card">
+      <h2>👤 Poin Saya</h2>
+      <div id="siswaInfo" style="margin-bottom:16px;"></div>
+      <div id="siswaPeringatan"></div>
+      <div class="stats-grid" style="margin-top:12px;">
+        <div class="stat-card danger"><div class="number" id="siswaTotalPelanggaran">0</div><div class="label">Total Pelanggaran</div></div>
+        <div class="stat-card success"><div class="number" id="siswaTotalPrestasi">0</div><div class="label">Total Prestasi</div></div>
+        <div class="stat-card"><div class="number" id="siswaTotalAkhir">0</div><div class="label">Total Poin Akhir</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📜 Riwayat Saya</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Poin</th><th>Keterangan</th></tr></thead>
+          <tbody id="siswaRiwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let currentUser = null;
+let currentRole = 'siswa';
+let chartInstance = null;
+
+// ============================================================
+// LOGIN
+// ============================================================
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errorEl = document.getElementById('loginError');
+  errorEl.textContent = '';
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result.success) {
+        currentUser = result;
+        currentRole = result.role;
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('userNameDisplay').textContent = result.nama || result.username;
+        document.getElementById('userRoleDisplay').textContent = result.role;
+        initApp();
+      } else {
+        errorEl.textContent = result.message || 'Login gagal';
+      }
+    })
+    .withFailureHandler(function(err) {
+      errorEl.textContent = 'Terjadi kesalahan: ' + err.message;
+    })
+    .doLogin(username, password);
+  return false;
+}
+
+function doLogout() {
+  currentUser = null;
+  currentRole = 'siswa';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+// ============================================================
+// INIT APP
+// ============================================================
+function initApp() {
+  // Setup tabs
+  document.querySelectorAll('.nav-tabs button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tab = this.dataset.tab;
+      switchTab(tab);
+    });
+  });
+  
+  // Show/hide admin tabs
+  if (currentRole === 'admin') {
+    document.getElementById('tabMaster').classList.remove('hidden');
+  } else {
+    document.getElementById('tabMaster').classList.add('hidden');
+  }
+  
+  // Set default tab
+  switchTab('dashboard');
+  loadAllData();
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+  
+  const panel = document.getElementById('panel' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+  if (panel) panel.classList.add('active');
+  
+  const btn = document.querySelector(`.nav-tabs button[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add('active');
+  
+  // Refresh data based on tab
+  if (tabId === 'dashboard') loadDashboard();
+  else if (tabId === 'input') loadInputForm();
+  else if (tabId === 'laporan') loadLaporan();
+  else if (tabId === 'siswaView') loadSiswaView();
+}
+
+// ============================================================
+// LOAD ALL DATA (initial)
+// ============================================================
+function loadAllData() {
+  // Inisialisasi system jika perlu
+  google.script.run
+    .withSuccessHandler(function(res) {
+      console.log('System init:', res);
+    })
+    .initSystem();
+  
+  loadDashboard();
+  loadInputForm();
+  loadLaporan();
+}
+
+// ============================================================
+// TOAST NOTIFICATION
+// ============================================================
+function showToast(message, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 4000);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function loadDashboard() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      // Stats
+      document.getElementById('statSiswa').textContent = data.siswa.length;
+      document.getElementById('statViolations').textContent = data.totalViolations;
+      document.getElementById('statAchievements').textContent = data.totalAchievements;
+      document.getElementById('statKelas').textContent = Object.keys(data.perKelas).length;
+      
+      // Top 5
+      const tbody = document.getElementById('top5Table');
+      tbody.innerHTML = '';
+      data.siswaTerbanyak.forEach((d, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${d.nama}</td>
+          <td>${d.kelas}</td>
+          <td>${d.totalPelanggaran}</td>
+          <td>${d.totalPrestasi}</td>
+          <td style="font-weight:700;color:${d.total > 50 ? '#dc2626' : '#16a34a'}">${d.total}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      
+      // Kelas stats
+      const ktBody = document.getElementById('kelasStatsTable');
+      ktBody.innerHTML = '';
+      Object.keys(data.perKelas).forEach(k => {
+        const d = data.perKelas[k];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${k}</td>
+          <td>${d.count}</td>
+          <td>${d.count > 0 ? (d.total / d.count).toFixed(1) : 0}</td>
+          <td>${d.max}</td>
+        `;
+        ktBody.appendChild(tr);
+      });
+      
+      // Chart - Tren tahunan (simulasi berdasarkan data)
+      updateChart(data);
+    })
+    .withFailureHandler(function(err) {
+      showToast('Gagal load dashboard: ' + err.message, 'error');
+    })
+    .getDashboardStats();
+}
+
+function updateChart(data) {
+  const ctx = document.getElementById('trenChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+  
+  // Buat data tren per bulan (simulasi)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+  const violasiPerBulan = Array(12).fill(0);
+  const prestasiPerBulan = Array(12).fill(0);
+  
+  // Simulasi dari data yang ada
+  const totalViolasi = data.totalViolations || 0;
+  const totalPrestasi = data.totalAchievements || 0;
+  for (let i = 0; i < 12; i++) {
+    violasiPerBulan[i] = Math.round((totalViolasi / 12) * (0.5 + Math.random()));
+    prestasiPerBulan[i] = Math.round((totalPrestasi / 12) * (0.5 + Math.random()));
+  }
+  
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Pelanggaran',
+          data: violasiPerBulan,
+          backgroundColor: 'rgba(220, 38, 38, 0.7)',
+          borderColor: '#dc2626',
+          borderWidth: 1
+        },
+        {
+          label: 'Prestasi',
+          data: prestasiPerBulan,
+          backgroundColor: 'rgba(22, 163, 74, 0.7)',
+          borderColor: '#16a34a',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ============================================================
+// INPUT FORM
+// ============================================================
+function loadInputForm() {
+  // Set tanggal default = hari ini
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('poinTanggal').value = today;
+  
+  // Load kelas
+  google.script.run
+    .withSuccessHandler(function(classes) {
+      const sel = document.getElementById('poinKelas');
+      sel.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        sel.appendChild(opt);
+      });
+    })
+    .getClasses();
+  
+  // Load kategori
+  loadKategori();
+  loadRiwayat();
+}
+
+function loadKategori() {
+  const jenis = document.getElementById('poinJenis').value;
+  google.script.run
+    .withSuccessHandler(function(categories) {
+      const sel = document.getElementById('poinKategori');
+      sel.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.nama;
+        opt.dataset.poin = c.poin;
+        opt.textContent = c.nama + ' (' + c.poin + ' poin)';
+        sel.appendChild(opt);
+      });
+    })
+    .getCategories(jenis);
+}
+
+function updatePoinOtomatis() {
+  const sel = document.getElementById('poinKategori');
+  const selected = sel.options[sel.selectedIndex];
+  const poin = selected ? selected.dataset.poin : 0;
+  document.getElementById('poinNilai').value = poin || 0;
+}
+
+function loadSiswaByKelas() {
+  const kelas = document.getElementById('poinKelas').value;
+  const sel = document.getElementById('poinSiswa');
+  sel.innerHTML = '<option value="">-- Pilih Siswa --</option>';
+  if (!kelas) return;
+  
+  google.script.run
+    .withSuccessHandler(function(students) {
+      students.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.NIS;
+        opt.textContent = s.Nama + ' (' + s.NIS + ')';
+        opt.dataset.nama = s.Nama;
+        opt.dataset.kelas = s.Kelas;
+        sel.appendChild(opt);
+      });
+    })
+    .getStudentsByClass(kelas);
+}
+
+function submitPoin(e) {
+  e.preventDefault();
+  const form = document.getElementById('poinForm');
+  const msg = document.getElementById('poinFormMessage');
+  msg.innerHTML = '';
+  
+  const nis = document.getElementById('poinSiswa').value;
+  const siswaOpt = document.getElementById('poinSiswa').options[document.getElementById('poinSiswa').selectedIndex];
+  
+  if (!nis) {
+    msg.innerHTML = '<div class="alert alert-danger">Pilih siswa terlebih dahulu!</div>';
+    return false;
+  }
+  
+  const data = {
+    tanggal: document.getElementById('poinTanggal').value,
+    nis: nis,
+    namaSiswa: siswaOpt ? siswaOpt.dataset.nama : '',
+    kelas: document.getElementById('poinKelas').value,
+    jenis: document.getElementById('poinJenis').value,
+    kategori: document.getElementById('poinKategori').value,
+    poin: parseInt(document.getElementById('poinNilai').value) || 0,
+    keterangan: document.getElementById('poinKeterangan').value,
+    petugas: document.getElementById('poinPetugas').value || currentUser?.nama || '',
+    type: document.getElementById('poinJenis').value
+  };
+  
+  // Handle foto upload
+  const fileInput = document.getElementById('poinFoto');
+  if (fileInput.files && fileInput.files.length > 0) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
+      google.script.run
+        .withSuccessHandler(function(uploadResult) {
+          if (uploadResult.success) {
+            data.fotoUrl = uploadResult.url;
+            savePoinData(data);
+          } else {
+            msg.innerHTML = '<div class="alert alert-danger">Gagal upload foto: ' + uploadResult.error + '</div>';
+          }
+        })
+        .withFailureHandler(function(err) {
+          msg.innerHTML = '<div class="alert alert-danger">Gagal upload foto: ' + err.message + '</div>';
+        })
+        .uploadFile(base64, fileInput.files[0].name);
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    savePoinData(data);
+  }
+  
+  return false;
+}
+
+// ============================================================
+// SAVE POIN DATA - DIPERBAIKI: reset semua field setelah sukses
+// ============================================================
+function savePoinData(data) {
+  const msg = document.getElementById('poinFormMessage');
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result.success) {
+        // Tampilkan notifikasi sukses
+        msg.innerHTML = '<div class="alert alert-success">✅ Poin berhasil tersimpan!</div>';
+        showToast('Poin berhasil tersimpan!', 'success');
+        
+        // ============================================================
+        // KOSONGKAN SEMUA FIELD INPUT (sesuai permintaan)
+        // ============================================================
+        // 1. Tanggal Kejadian → reset ke hari ini
+        document.getElementById('poinTanggal').value = new Date().toISOString().split('T')[0];
+        
+        // 2. Kelas → reset ke placeholder
+        document.getElementById('poinKelas').value = '';
+        
+        // 3. Siswa → reset ke placeholder saja
+        document.getElementById('poinSiswa').innerHTML = '<option value="">-- Pilih Siswa --</option>';
+        
+        // 4. Jenis → reset ke default 'pelanggaran'
+        document.getElementById('poinJenis').value = 'pelanggaran';
+        
+        // 5. Kategori → reset ke placeholder (akan diisi ulang oleh loadKategori)
+        document.getElementById('poinKategori').innerHTML = '<option value="">-- Pilih Kategori --</option>';
+        
+        // 6. Poin (otomatis) → kosongkan
+        document.getElementById('poinNilai').value = '';
+        
+        // 7. Keterangan Detail → kosongkan
+        document.getElementById('poinKeterangan').value = '';
+        
+        // 8. Petugas Validasi → kosongkan
+        document.getElementById('poinPetugas').value = '';
+        
+        // 9. Upload Foto → kosongkan
+        document.getElementById('poinFoto').value = '';
+        
+        // Load ulang kategori untuk jenis 'pelanggaran' (default)
+        loadKategori();
+        
+        // Refresh riwayat dan dashboard
+        loadRiwayat();
+        loadDashboard();
+      } else {
+        msg.innerHTML = '<div class="alert alert-danger">Gagal menyimpan: ' + (result.message || '') + '</div>';
+      }
+    })
+    .withFailureHandler(function(err) {
+      msg.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
+    })
+    .savePoin(data);
+}
+
+function loadRiwayat() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const all = [...data.violations, ...data.achievements];
+      all.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+      const tbody = document.getElementById('riwayatTable');
+      tbody.innerHTML = '';
+      const limit = all.slice(0, 20);
+      limit.forEach(item => {
+        const tr = document.createElement('tr');
+        const jenis = item.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi';
+        tr.innerHTML = `
+          <td>${item.Tanggal || '-'}</td>
+          <td>${item.NamaSiswa || item.NIS || '-'}</td>
+          <td>${item.Kelas || '-'}</td>
+          <td>${jenis}</td>
+          <td>${item.Kategori || '-'}</td>
+          <td style="font-weight:700;color:${item.type === 'pelanggaran' ? '#dc2626' : '#16a34a'}">${item.Poin || 0}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .withFailureHandler(function(err) {
+      showToast('Gagal load riwayat: ' + err.message, 'error');
+    })
+    .getAllPoin();
+}
+
+// ============================================================
+// MASTER DATA (Admin only)
+// ============================================================
+let masterCurrentTab = 'siswa';
+
+function showMasterTab(tab) {
+  masterCurrentTab = tab;
+  const container = document.getElementById('masterContent');
+  
+  if (tab === 'siswa') {
+    container.innerHTML = `
+      <h3>📋 Data Siswa</h3>
+      <form onsubmit="return saveMasterSiswa(event)" style="margin-bottom:16px;">
+        <div class="form-row">
+          <div class="form-group"><label>NIS</label><input type="text" id="mNIS" required placeholder="NIS"></div>
+          <div class="form-group"><label>Nama</label><input type="text" id="mNama" required placeholder="Nama siswa"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Kelas</label><input type="text" id="mKelas" placeholder="Kelas"></div>
+          <div class="form-group"><label>JK</label>
+            <select id="mJK"><option value="L">L</option><option value="P">P</option></select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Tambah/Update Siswa</button>
+      </form>
+      <div class="table-wrap">
+        <table><thead><tr><th>NIS</th><th>Nama</th><th>Kelas</th><th>JK</th><th>Aksi</th></tr></thead>
+        <tbody id="masterSiswaTable"></tbody></table>
+      </div>
+    `;
+    loadMasterSiswa();
+  } else if (tab === 'kelas') {
+    container.innerHTML = `
+      <h3>📋 Data Kelas</h3>
+      <form onsubmit="return saveMasterKelas(event)" style="margin-bottom:16px;">
+        <div class="form-row">
+          <div class="form-group"><label>Nama Kelas</label><input type="text" id="mKelasName" required placeholder="Contoh: X-A"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Tambah Kelas</button>
+      </form>
+      <div class="table-wrap">
+        <table><thead><tr><th>Kelas</th><th>Aksi</th></tr></thead>
+        <tbody id="masterKelasTable"></tbody></table>
+      </div>
+    `;
+    loadMasterKelas();
+  } else if (tab === 'kategori') {
+    container.innerHTML = `
+      <h3>📋 Kategori Poin</h3>
+      <form onsubmit="return saveMasterKategori(event)" style="margin-bottom:16px;">
+        <div class="form-row">
+          <div class="form-group"><label>Jenis</label>
+            <select id="mKatJenis"><option value="pelanggaran">Pelanggaran</option><option value="prestasi">Prestasi</option></select>
+          </div>
+          <div class="form-group"><label>Nama Kategori</label><input type="text" id="mKatNama" required placeholder="Nama kategori"></div>
+        </div>
+        <div class="form-group"><label>Poin</label><input type="number" id="mKatPoin" required placeholder="Nilai poin"></div>
+        <button type="submit" class="btn btn-primary btn-sm">Tambah Kategori</button>
+      </form>
+      <div class="table-wrap">
+        <table><thead><tr><th>Jenis</th><th>Nama</th><th>Poin</th><th>Aksi</th></tr></thead>
+        <tbody id="masterKategoriTable"></tbody></table>
+      </div>
+    `;
+    loadMasterKategori();
+  } else if (tab === 'user') {
+    container.innerHTML = `
+      <h3>👤 Data User</h3>
+      <form onsubmit="return saveMasterUser(event)" style="margin-bottom:16px;">
+        <div class="form-row">
+          <div class="form-group"><label>Username</label><input type="text" id="mUserUsername" required placeholder="Username"></div>
+          <div class="form-group"><label>Password</label><input type="text" id="mUserPassword" required placeholder="Password"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Role</label>
+            <select id="mUserRole"><option value="siswa">Siswa</option><option value="admin">Admin</option></select>
+          </div>
+          <div class="form-group"><label>Nama Lengkap</label><input type="text" id="mUserNama" placeholder="Nama"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Tambah/Update User</button>
+      </form>
+      <div class="table-wrap">
+        <table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Aksi</th></tr></thead>
+        <tbody id="masterUserTable"></tbody></table>
+      </div>
+    `;
+    loadMasterUser();
+  }
+}
+
+// ---- MASTER: SISWA ----
+function loadMasterSiswa() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const tbody = document.getElementById('masterSiswaTable');
+      tbody.innerHTML = '';
+      data.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.NIS}</td>
+          <td>${d.Nama}</td>
+          <td>${d.Kelas}</td>
+          <td>${d.JK}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteMasterSiswa('${d.NIS}')">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .getStudents();
+}
+
+function saveMasterSiswa(e) {
+  e.preventDefault();
+  const data = {
+    NIS: document.getElementById('mNIS').value.trim(),
+    Nama: document.getElementById('mNama').value.trim(),
+    Kelas: document.getElementById('mKelas').value.trim(),
+    JK: document.getElementById('mJK').value
+  };
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Siswa berhasil disimpan!', 'success');
+      loadMasterSiswa();
+      document.getElementById('mNIS').value = '';
+      document.getElementById('mNama').value = '';
+      document.getElementById('mKelas').value = '';
+    })
+    .saveStudent(data);
+  return false;
+}
+
+function deleteMasterSiswa(nis) {
+  if (!confirm('Hapus siswa ini?')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Siswa dihapus!', 'success');
+      loadMasterSiswa();
+    })
+    .deleteStudent(nis);
+}
+
+// ---- MASTER: KELAS ----
+function loadMasterKelas() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const tbody = document.getElementById('masterKelasTable');
+      tbody.innerHTML = '';
+      data.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteMasterKelas('${d}')">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .getClasses();
+}
+
+function saveMasterKelas(e) {
+  e.preventDefault();
+  const name = document.getElementById('mKelasName').value.trim();
+  if (!name) return false;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Kelas berhasil ditambahkan!', 'success');
+      loadMasterKelas();
+      document.getElementById('mKelasName').value = '';
+    })
+    .saveClass(name);
+  return false;
+}
+
+function deleteMasterKelas(name) {
+  if (!confirm('Hapus kelas ini?')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Kelas dihapus!', 'success');
+      loadMasterKelas();
+    })
+    .deleteClass(name);
+}
+
+// ---- MASTER: KATEGORI ----
+function loadMasterKategori() {
+  const pelanggaran = [];
+  const prestasi = [];
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const tbody = document.getElementById('masterKategoriTable');
+      tbody.innerHTML = '';
+      // Data sudah dari getCategories
+      // Kita perlu gabungkan
+      google.script.run
+        .withSuccessHandler(function(pel) {
+          google.script.run
+            .withSuccessHandler(function(pre) {
+              const all = [...pel, ...pre];
+              all.forEach(d => {
+                const tr = document.createElement('tr');
+                const jenis = d.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi';
+                tr.innerHTML = `
+                  <td>${jenis}</td>
+                  <td>${d.nama}</td>
+                  <td>${d.poin}</td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteMasterKategori('${d.type}','${d.nama}')">Hapus</button></td>
+                `;
+                tbody.appendChild(tr);
+              });
+            })
+            .getCategories('prestasi');
+        })
+        .getCategories('pelanggaran');
+    })
+    .getCategories('pelanggaran');
+}
+
+function saveMasterKategori(e) {
+  e.preventDefault();
+  const type = document.getElementById('mKatJenis').value;
+  const nama = document.getElementById('mKatNama').value.trim();
+  const poin = parseInt(document.getElementById('mKatPoin').value) || 0;
+  if (!nama) return false;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Kategori berhasil ditambahkan!', 'success');
+      loadMasterKategori();
+      document.getElementById('mKatNama').value = '';
+      document.getElementById('mKatPoin').value = '';
+    })
+    .saveCategory(type, nama, poin);
+  return false;
+}
+
+function deleteMasterKategori(type, nama) {
+  if (!confirm('Hapus kategori ini?')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('Kategori dihapus!', 'success');
+      loadMasterKategori();
+    })
+    .deleteCategory(type, nama);
+}
+
+// ---- MASTER: USER ----
+function loadMasterUser() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const tbody = document.getElementById('masterUserTable');
+      tbody.innerHTML = '';
+      data.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.username}</td>
+          <td>${d.nama}</td>
+          <td><span class="role-badge">${d.role}</span></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteMasterUser('${d.username}')">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .getUsers();
+}
+
+function saveMasterUser(e) {
+  e.preventDefault();
+  const data = {
+    username: document.getElementById('mUserUsername').value.trim(),
+    password: document.getElementById('mUserPassword').value.trim(),
+    role: document.getElementById('mUserRole').value,
+    nama: document.getElementById('mUserNama').value.trim() || document.getElementById('mUserUsername').value.trim()
+  };
+  if (!data.username || !data.password) {
+    showToast('Username dan password wajib diisi!', 'error');
+    return false;
+  }
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('User berhasil disimpan!', 'success');
+      loadMasterUser();
+      document.getElementById('mUserUsername').value = '';
+      document.getElementById('mUserPassword').value = '';
+      document.getElementById('mUserNama').value = '';
+    })
+    .saveUser(data);
+  return false;
+}
+
+function deleteMasterUser(username) {
+  if (!confirm('Hapus user ini?')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('User dihapus!', 'success');
+      loadMasterUser();
+    })
+    .deleteUser(username);
+}
+
+// ============================================================
+// LAPORAN
+// ============================================================
+function loadLaporan() {
+  // Load kelas untuk filter
+  google.script.run
+    .withSuccessHandler(function(classes) {
+      const sel = document.getElementById('laporanKelas');
+      sel.innerHTML = '<option value="Semua">Semua Kelas</option>';
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        sel.appendChild(opt);
+      });
+    })
+    .getClasses();
+  
+  refreshLaporan();
+}
+
+function refreshLaporan() {
+  const filter = document.getElementById('laporanKelas').value;
+  google.script.run
+    .withSuccessHandler(function(data) {
+      let filtered = data.siswa;
+      if (filter && filter !== 'Semua') {
+        filtered = filtered.filter(d => d.kelas === filter);
+      }
+      const tbody = document.getElementById('laporanTable');
+      tbody.innerHTML = '';
+      filtered.sort((a, b) => b.total - a.total);
+      filtered.forEach((d, i) => {
+        const tr = document.createElement('tr');
+        let status = 'Normal';
+        let statusClass = '';
+        if (d.total >= 100) { status = '⚠️ Segera ke BK'; statusClass = 'danger'; }
+        else if (d.total > 50) { status = '⚠️ Lapor Wali Kelas'; statusClass = 'warning'; }
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${d.nama}</td>
+          <td>${d.kelas}</td>
+          <td>${d.totalPelanggaran}</td>
+          <td>${d.totalPrestasi}</td>
+          <td style="font-weight:700;color:${d.total > 50 ? '#dc2626' : '#16a34a'}">${d.total}</td>
+          <td class="${statusClass}">${status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .getDashboardStats();
+}
+
+function cetakLaporan() {
+  const filter = document.getElementById('laporanKelas').value;
+  const msg = document.getElementById('laporanMessage');
+  msg.innerHTML = '<div class="loading">Membuat PDF...</div>';
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result.success) {
+        msg.innerHTML = `
+          <div class="alert alert-success">
+            ✅ PDF berhasil dibuat! <a href="${result.url}" target="_blank">Buka PDF</a>
+          </div>
+        `;
+        showToast('PDF siap!', 'success');
+      } else {
+        msg.innerHTML = '<div class="alert alert-danger">Gagal membuat PDF: ' + (result.message || '') + '</div>';
+      }
+    })
+    .withFailureHandler(function(err) {
+      msg.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
+    })
+    .generateReport(filter);
+}
+
+// Event listener untuk filter laporan
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'laporanKelas') {
+    refreshLaporan();
+  }
+});
+
+// ============================================================
+// SISWA VIEW
+// ============================================================
+function loadSiswaView() {
+  if (!currentUser) return;
+  
+  // Cari data siswa berdasarkan username (asumsi username = NIS atau nama)
+  const nis = currentUser.username;
+  google.script.run
+    .withSuccessHandler(function(student) {
+      if (!student) {
+        document.getElementById('siswaInfo').innerHTML = '<div class="alert alert-warning">Data siswa tidak ditemukan. Hubungi admin.</div>';
+        return;
+      }
+      
+      document.getElementById('siswaInfo').innerHTML = `
+        <p><strong>Nama:</strong> ${student.Nama}</p>
+        <p><strong>NIS:</strong> ${student.NIS}</p>
+        <p><strong>Kelas:</strong> ${student.Kelas}</p>
+      `;
+      
+      // Load poin siswa
+      google.script.run
+        .withSuccessHandler(function(poinData) {
+          let totalPelanggaran = 0;
+          let totalPrestasi = 0;
+          const riwayat = [];
+          
+          poinData.forEach(p => {
+            const poinVal = parseInt(p.Poin) || 0;
+            if (p.type === 'pelanggaran') {
+              totalPelanggaran += poinVal;
+            } else {
+              totalPrestasi += poinVal;
+            }
+            riwayat.push({
+              tanggal: p.Tanggal || '-',
+              jenis: p.type === 'pelanggaran' ? '❌ Pelanggaran' : '🏆 Prestasi',
+              kategori: p.Kategori || '-',
+              poin: poinVal,
+              keterangan: p.Keterangan || '-'
+            });
+          });
+          
+          const totalAkhir = totalPelanggaran - totalPrestasi;
+          document.getElementById('siswaTotalPelanggaran').textContent = totalPelanggaran;
+          document.getElementById('siswaTotalPrestasi').textContent = totalPrestasi;
+          document.getElementById('siswaTotalAkhir').textContent = totalAkhir;
+          
+          // Peringatan
+          const warningEl = document.getElementById('siswaPeringatan');
+          warningEl.innerHTML = '';
+          if (totalAkhir >= 100) {
+            warningEl.innerHTML = '<div class="alert alert-danger">⚠️ PERINGATAN KERAS! Poin Anda mencapai batas maksimal (100). Segera temui Guru BK atau Wali Kelas!</div>';
+          } else if (totalAkhir > 50) {
+            warningEl.innerHTML = '<div class="alert alert-warning">⚠️ Perhatian! Poin Anda melebihi 50. Silakan melapor kepada Wali Kelas.</div>';
+          } else {
+            warningEl.innerHTML = '<div class="alert alert-success">✅ Poin Anda dalam batas normal. Tetap jaga disiplin!</div>';
+          }
+          
+          // Riwayat
+          const tbody = document.getElementById('siswaRiwayatTable');
+          tbody.innerHTML = '';
+          riwayat.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+          riwayat.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${r.tanggal}</td>
+              <td>${r.jenis}</td>
+              <td>${r.kategori}</td>
+              <td style="font-weight:700;color:${r.jenis.includes('Pelanggaran') ? '#dc2626' : '#16a34a'}">${r.poin}</td>
+              <td>${r.keterangan}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .getPoinByNis(nis);
+    })
+    .getStudentByNis(nis);
+}
+
+// ============================================================
+// AUTO-REFRESH for laporan filter
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Event listener untuk laporan filter sudah di atas
+});
+
+// ============================================================
+// KEYBOARD SHORTCUT: Enter untuk login
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+  }
+});
+
+console.log('🚀 SIGAP - SMA Negeri Jatirogo siap digunakan!');
+</script>
+</body>
+</html>
