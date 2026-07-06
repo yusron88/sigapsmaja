@@ -1,501 +1,275 @@
-// ============================================================
-// SIGAP - Sistem Penilaian dan Penegakan Disiplin
-// SMA Negeri Jatirogo
-// ============================================================
-
-const SPREADSHEET_ID = '1ejr5gZWFDKzookF8m8QTg2QekD-7NkxyZ8h3m9AO2wM';
-const CONFIG = {
-  sheets: {
-    users: 'Users',
-    students: 'Students',
-    classes: 'Classes',
-    categories: 'Categories',
-    violations: 'Violations',
-    achievements: 'Achievements'
-  }
-};
-
-// ============================================================
-// DO GET - Entry point web app
-// ============================================================
-function doGet(e) {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('SIGAP - SMA Negeri Jatirogo')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-// ============================================================
-// UTILITY - Get sheet by name
-// ============================================================
-function getSheet(name) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
-  }
-  return sheet;
-}
-
-// ============================================================
-// AUTHENTICATION
-// ============================================================
-function doLogin(username, password) {
-  const sheet = getSheet(CONFIG.sheets.users);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (row[0] === username && row[1] === password) {
-      return {
-        success: true,
-        role: row[2] || 'siswa',
-        username: row[0],
-        nama: row[3] || row[0]
-      };
-    }
-  }
-  return { success: false, message: 'Username atau password salah' };
-}
-
-// ============================================================
-// STUDENT DATA
-// ============================================================
-function getStudents() {
-  const sheet = getSheet(CONFIG.sheets.students);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0] || [];
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    const obj = {};
-    headers.forEach((h, idx) => { obj[h] = data[i][idx] || ''; });
-    result.push(obj);
-  }
-  return result;
-}
-
-function getStudentByNis(nis) {
-  const students = getStudents();
-  return students.find(s => s.NIS == nis) || null;
-}
-
-function getStudentsByClass(className) {
-  const students = getStudents();
-  return students.filter(s => s.Kelas === className);
-}
-
-function saveStudent(data) {
-  const sheet = getSheet(CONFIG.sheets.students);
-  const headers = ['NIS', 'Nama', 'Kelas', 'JK'];
-  const existing = getStudents();
-  const idx = existing.findIndex(s => s.NIS == data.NIS);
-  if (idx >= 0) {
-    const row = idx + 2;
-    sheet.getRange(row, 1, 1, headers.length).setValues([
-      [data.NIS, data.Nama, data.Kelas, data.JK]
-    ]);
-  } else {
-    sheet.appendRow([data.NIS, data.Nama, data.Kelas, data.JK]);
-  }
-  return { success: true };
-}
-
-function deleteStudent(nis) {
-  const sheet = getSheet(CONFIG.sheets.students);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == nis) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false, message: 'Siswa tidak ditemukan' };
-}
-
-// ============================================================
-// CLASS DATA
-// ============================================================
-function getClasses() {
-  const sheet = getSheet(CONFIG.sheets.classes);
-  const data = sheet.getDataRange().getValues();
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) result.push(data[i][0]);
-  }
-  return result;
-}
-
-function saveClass(className) {
-  const sheet = getSheet(CONFIG.sheets.classes);
-  const existing = getClasses();
-  if (!existing.includes(className)) {
-    sheet.appendRow([className]);
-  }
-  return { success: true };
-}
-
-function deleteClass(className) {
-  const sheet = getSheet(CONFIG.sheets.classes);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === className) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-// ============================================================
-// CATEGORIES (Violation & Achievement)
-// ============================================================
-function getCategories(type) {
-  const sheet = getSheet(CONFIG.sheets.categories);
-  const data = sheet.getDataRange().getValues();
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === type && data[i][1]) {
-      result.push({ nama: data[i][1], poin: data[i][2] || 0 });
-    }
-  }
-  return result;
-}
-
-function saveCategory(type, nama, poin) {
-  const sheet = getSheet(CONFIG.sheets.categories);
-  sheet.appendRow([type, nama, poin]);
-  return { success: true };
-}
-
-function deleteCategory(type, nama) {
-  const sheet = getSheet(CONFIG.sheets.categories);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === type && data[i][1] === nama) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-// ============================================================
-// VIOLATIONS & ACHIEVEMENTS (Poin entries)
-// ============================================================
-function savePoin(data) {
-  const sheetName = data.type === 'pelanggaran' 
-    ? CONFIG.sheets.violations 
-    : CONFIG.sheets.achievements;
-  const sheet = getSheet(sheetName);
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGAP - SMA Negeri Jatirogo</title>
   
-  // Auto-generate ID
-  const lastRow = sheet.getLastRow();
-  const id = lastRow === 0 ? 1 : sheet.getRange(lastRow, 1).getValue() + 1;
+  <!-- External Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="https://sigapsmaja.vercel.app/favicon.ico">
+  <link rel="apple-touch-icon" href="https://sigapsmaja.vercel.app/logo-sma1jati.png">
+  <link rel="manifest" href="https://sigapsmaja.vercel.app/manifest.json">
   
-  const row = [
-    id,
-    data.tanggal || new Date().toISOString().split('T')[0],
-    data.nis,
-    data.namaSiswa,
-    data.kelas,
-    data.kategori,
-    data.poin || 0,
-    data.keterangan || '',
-    data.petugas || '',
-    data.fotoUrl || '',
-    new Date().toISOString()
-  ];
-  sheet.appendRow(row);
-  return { success: true, id: id };
-}
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
-function getPoinByNis(nis) {
-  const violations = getViolations();
-  const achievements = getAchievements();
-  const semua = [...violations, ...achievements];
-  return semua.filter(item => item.NIS == nis);
-}
-
-function getViolations() {
-  return getPoinData(CONFIG.sheets.violations, 'pelanggaran');
-}
-
-function getAchievements() {
-  return getPoinData(CONFIG.sheets.achievements, 'prestasi');
-}
-
-function getPoinData(sheetName, type) {
-  const sheet = getSheet(sheetName);
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  const headers = data[0];
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    const obj = {};
-    headers.forEach((h, idx) => { obj[h] = data[i][idx] || ''; });
-    obj.type = type;
-    result.push(obj);
-  }
-  return result;
-}
-
-function getAllPoin() {
-  return {
-    violations: getViolations(),
-    achievements: getAchievements()
-  };
-}
-
-// ============================================================
-// DASHBOARD STATISTICS
-// ============================================================
-function getDashboardStats() {
-  const students = getStudents();
-  const violations = getViolations();
-  const achievements = getAchievements();
-  
-  // Total poin per siswa (kompensasi: prestasi mengurangi pelanggaran)
-  const poinMap = {};
-  students.forEach(s => {
-    poinMap[s.NIS] = { 
-      nama: s.Nama, 
-      kelas: s.Kelas, 
-      totalPelanggaran: 0, 
-      totalPrestasi: 0,
-      total: 0 
-    };
-  });
-  
-  violations.forEach(v => {
-    if (poinMap[v.NIS]) {
-      poinMap[v.NIS].totalPelanggaran += Number(v.Poin) || 0;
-    }
-  });
-  
-  achievements.forEach(a => {
-    if (poinMap[a.NIS]) {
-      poinMap[a.NIS].totalPrestasi += Number(a.Poin) || 0;
-    }
-  });
-  
-  const result = [];
-  Object.keys(poinMap).forEach(nis => {
-    const d = poinMap[nis];
-    d.total = d.totalPelanggaran - d.totalPrestasi;
-    if (d.total > 0 || d.totalPelanggaran > 0 || d.totalPrestasi > 0) {
-      result.push(d);
-    }
-  });
-  
-  // Statistik per kelas
-  const kelasStats = {};
-  result.forEach(d => {
-    if (!kelasStats[d.kelas]) {
-      kelasStats[d.kelas] = { total: 0, count: 0, max: 0 };
-    }
-    kelasStats[d.kelas].total += d.total;
-    kelasStats[d.kelas].count += 1;
-    if (d.total > kelasStats[d.kelas].max) kelasStats[d.kelas].max = d.total;
-  });
-  
-  return {
-    siswa: result,
-    perKelas: kelasStats,
-    totalViolations: violations.length,
-    totalAchievements: achievements.length,
-    siswaTerbanyak: result.sort((a, b) => b.total - a.total).slice(0, 5)
-  };
-}
-
-// ============================================================
-// USERS MANAGEMENT (Admin only)
-// ============================================================
-function getUsers() {
-  const sheet = getSheet(CONFIG.sheets.users);
-  const data = sheet.getDataRange().getValues();
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) {
-      result.push({
-        username: data[i][0],
-        password: data[i][1] || '',
-        role: data[i][2] || 'siswa',
-        nama: data[i][3] || data[i][0]
-      });
-    }
-  }
-  return result;
-}
-
-function saveUser(data) {
-  const sheet = getSheet(CONFIG.sheets.users);
-  const users = getUsers();
-  const idx = users.findIndex(u => u.username === data.username);
-  if (idx >= 0) {
-    const row = idx + 2;
-    sheet.getRange(row, 1, 1, 4).setValues([
-      [data.username, data.password, data.role, data.nama]
-    ]);
-  } else {
-    sheet.appendRow([data.username, data.password, data.role, data.nama]);
-  }
-  return { success: true };
-}
-
-function deleteUser(username) {
-  const sheet = getSheet(CONFIG.sheets.users);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === username) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-// ============================================================
-// FILE UPLOAD - Upload foto ke Google Drive
-// ============================================================
-function uploadFile(base64Data, fileName) {
-  try {
-    const folderName = 'SIGAP_Photos';
-    let folder = DriveApp.getFoldersByName(folderName);
-    if (!folder.hasNext()) {
-      folder = DriveApp.createFolder(folderName);
-    } else {
-      folder = folder.next();
-    }
+<!-- ============================================================ -->
+<!-- LOGIN PAGE -->
+<!-- ============================================================ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="logo">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo SMA Negeri Jatirogo" onerror="this.style.display='none'">
+      <h1>SIGAP</h1>
+      <p>SMA Negeri Jatirogo</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 400;">Sistem Penilaian &amp; Penegakan Disiplin</p>
+    </div>
     
-    const blob = Utilities.newBlob(
-      Utilities.base64Decode(base64Data.split(',')[1]),
-      'image/jpeg',
-      fileName
-    );
-    const file = folder.createFile(blob);
-    const fileId = file.getId();
-    const url = 'https://drive.google.com/uc?export=view&id=' + fileId;
-    return { success: true, url: url, fileId: fileId };
-  } catch (e) {
-    return { success: false, error: e.toString() };
-  }
-}
-
-// ============================================================
-// REPORT - Generate PDF
-// ============================================================
-function generateReport(filterKelas) {
-  const stats = getDashboardStats();
-  let data = stats.siswa;
-  if (filterKelas && filterKelas !== 'Semua') {
-    data = data.filter(d => d.kelas === filterKelas);
-  }
-  
-  // Buat HTML untuk PDF
-  const html = `
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        h1 { color: #1a56db; text-align: center; }
-        h2 { color: #374151; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #1a56db; color: white; padding: 8px; text-align: left; }
-        td { padding: 8px; border-bottom: 1px solid #ddd; }
-        .total { font-weight: bold; }
-        .warning { color: #dc2626; }
-        .danger { color: #dc2626; font-weight: bold; }
-        .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 12px; }
-      </style>
-    </head>
-    <body>
-      <h1>SIGAP - Laporan Poin Siswa</h1>
-      <p style="text-align:center;">SMA Negeri Jatirogo</p>
-      <p style="text-align:center;">Filter Kelas: ${filterKelas || 'Semua'}</p>
-      <p style="text-align:center;">Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
-      
-      <h2>Rekapitulasi Poin</h2>
-      <table>
-        <tr><th>No</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total Poin</th><th>Status</th></tr>
-        ${data.map((d, i) => `
-          <tr>
-            <td>${i+1}</td>
-            <td>${d.nama}</td>
-            <td>${d.kelas}</td>
-            <td>${d.totalPelanggaran}</td>
-            <td>${d.totalPrestasi}</td>
-            <td class="${d.total > 50 ? 'warning' : ''} ${d.total >= 100 ? 'danger' : ''}">${d.total}</td>
-            <td>${d.total >= 100 ? '⚠️ Segera ke BK' : d.total > 50 ? '⚠️ Lapor Wali Kelas' : 'Normal'}</td>
-          </tr>
-        `).join('')}
-      </table>
-      
-      <h2>Statistik</h2>
-      <table>
-        <tr><th>Total Siswa</th><td>${data.length}</td></tr>
-        <tr><th>Total Pelanggaran</th><td>${stats.totalViolations}</td></tr>
-        <tr><th>Total Prestasi</th><td>${stats.totalAchievements}</td></tr>
-      </table>
-      
-      <div class="footer">
-        Dicetak dari SIGAP - SMA Negeri Jatirogo
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="input-icon">
+        <i class="fas fa-user"></i>
+        <input type="text" id="loginUsername" placeholder="Username" required>
       </div>
-    </body>
-    </html>
-  `;
-  
-  const blob = Utilities.newBlob(html, 'text/html', 'report.html');
-  const pdfBlob = blob.getAs('application/pdf');
-  const file = DriveApp.createFile(pdfBlob).setName('Laporan_SIGAP_' + new Date().toISOString().split('T')[0] + '.pdf');
-  return { success: true, url: file.getUrl(), fileId: file.getId() };
-}
+      
+      <div class="input-icon">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+      </div>
+      
+      <button type="submit">Login</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
 
-// ============================================================
-// INIT - Setup default sheets & data jika kosong
-// ============================================================
-function initSystem() {
-  // Users
-  let sheet = getSheet(CONFIG.sheets.users);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Username', 'Password', 'Role', 'Nama']);
-    sheet.appendRow(['admin', 'admin123', 'admin', 'Administrator']);
-    sheet.appendRow(['siswa1', 'siswa123', 'siswa', 'Siswa Contoh']);
-  }
-  
-  // Classes
-  sheet = getSheet(CONFIG.sheets.classes);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Kelas']);
-    ['X-A', 'X-B', 'XI-A', 'XI-B', 'XII-A', 'XII-B'].forEach(k => sheet.appendRow([k]));
-  }
-  
-  // Students
-  sheet = getSheet(CONFIG.sheets.students);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['NIS', 'Nama', 'Kelas', 'JK']);
-    sheet.appendRow(['001', 'Budi Santoso', 'X-A', 'L']);
-    sheet.appendRow(['002', 'Ani Wijaya', 'X-A', 'P']);
-  }
-  
-  // Categories
-  sheet = getSheet(CONFIG.sheets.categories);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Type', 'Nama', 'Poin']);
-    const cats = [
-      ['pelanggaran', 'Terlambat', 10],
-      ['pelanggaran', 'Bolos', 59],
-      ['pelanggaran', 'Merokok', 75],
-      ['pelanggaran', 'Berkelahi', 100],
-      ['prestasi', 'Juara Kelas', 30],
-      ['prestasi', 'Juara Lomba', 50],
-      ['prestasi', 'Juara Nasional', 75]
-    ];
-    cats.forEach(c => sheet.appendRow(c));
-  }
-  
-  // Violations & Achievements
-  getSheet(CONFIG.sheets.violations);
-  getSheet(CONFIG.sheets.achievements);
-  
-  return { success: true, message: 'Sistem SIGAP siap digunakan!' };
-}
+<!-- ============================================================ -->
+<!-- MAIN APP -->
+<!-- ============================================================ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo" onerror="this.style.display='none'" style="height:40px;">
+      <div>
+        <h1>SIGAP (Sistem Penilaian & Penegakan Disiplin)</h1>
+        <span>SMA Negeri Jatirogo</span>
+      </div>
+    </div>
+    <div class="user-info">
+      <span id="userNameDisplay">User</span>
+      <span class="role-badge" id="userRoleDisplay">siswa</span>
+      <button onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav class="nav-tabs" id="navTabs">
+    <button class="active" data-tab="dashboard">📊 Dashboard</button>
+    <button data-tab="input">✏️ Input Poin</button>
+    <button data-tab="master" id="tabMaster" class="hidden">📚 Master Data</button>
+    <button data-tab="laporan">📄 Laporan</button>
+    <button data-tab="siswaView" id="tabSiswaView">👤 Poin Saya</button>
+  </nav>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: DASHBOARD -->
+  <!-- ========================================================== -->
+  <div id="panelDashboard" class="panel active">
+    <div class="stats-grid" id="dashboardStats">
+      <div class="stat-card"><div class="number" id="statSiswa">0</div><div class="label">Total Siswa</div></div>
+      <div class="stat-card danger"><div class="number" id="statViolations">0</div><div class="label">Pelanggaran</div></div>
+      <div class="stat-card success"><div class="number" id="statAchievements">0</div><div class="label">Prestasi</div></div>
+      <div class="stat-card"><div class="number" id="statKelas">0</div><div class="label">Kelas</div></div>
+    </div>
+    
+    <div class="card">
+      <h2>📈 Tren Poin Tahunan</h2>
+      <div class="chart-container">
+        <canvas id="trenChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>🏆 Top 5 Siswa dengan Poin Tertinggi</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th></tr></thead>
+          <tbody id="top5Table"></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>📋 Statistik per Kelas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Kelas</th><th>Jumlah Siswa</th><th>Rata-rata Poin</th><th>Poin Tertinggi</th></tr></thead>
+          <tbody id="kelasStatsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: INPUT POIN -->
+  <!-- ========================================================== -->
+  <div id="panelInput" class="panel">
+    <div class="card">
+      <h2>✏️ Input Poin Baru</h2>
+      <form id="poinForm" onsubmit="return submitPoin(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanggal Kejadian</label>
+            <input type="date" id="poinTanggal" required>
+          </div>
+          <div class="form-group">
+            <label>Kelas</label>
+            <select id="poinKelas" onchange="loadSiswaByKelas()" required>
+              <option value="">-- Pilih Kelas --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Siswa</label>
+            <select id="poinSiswa" required>
+              <option value="">-- Pilih Siswa --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="poinKategori" onchange="updatePoinOtomatis()" required>
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Jenis</label>
+            <select id="poinJenis" onchange="loadKategori()" required>
+              <option value="pelanggaran">❌ Pelanggaran</option>
+              <option value="prestasi">🏆 Prestasi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Poin (otomatis)</label>
+            <input type="number" id="poinNilai" readonly style="background:#f1f5f9;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Keterangan Detail</label>
+          <textarea id="poinKeterangan" placeholder="Deskripsi kejadian..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Petugas Validasi</label>
+            <input type="text" id="poinPetugas" placeholder="Nama petugas">
+          </div>
+          <div class="form-group">
+            <label>Upload Foto (opsional)</label>
+            <input type="file" id="poinFoto" accept="image/*">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Simpan Poin</button>
+        <div id="poinFormMessage" style="margin-top:12px;"></div>
+      </form>
+    </div>
+    
+    <div class="card">
+      <h2>📜 Riwayat Poin Terbaru</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Siswa</th><th>Kelas</th><th>Jenis</th><th>Kategori</th><th>Poin</th></tr></thead>
+          <tbody id="riwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: MASTER DATA (Admin only) -->
+  <!-- ========================================================== -->
+  <div id="panelMaster" class="panel">
+    <div class="card">
+      <h2>📚 Master Data</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('siswa')">Siswa</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kelas')">Kelas</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kategori')">Kategori</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('user')">User</button>
+      </div>
+      <div id="masterContent">
+        <p>Pilih tab di atas untuk mengelola data.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: LAPORAN -->
+  <!-- ========================================================== -->
+  <div id="panelLaporan" class="panel">
+    <div class="card">
+      <h2>📄 Cetak Laporan</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Filter Kelas</label>
+          <select id="laporanKelas">
+            <option value="Semua">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-success" onclick="cetakLaporan()">🖨️ Cetak PDF</button>
+        </div>
+      </div>
+      <div id="laporanMessage" style="margin-top:12px;"></div>
+    </div>
+    <div class="card">
+      <h2>📊 Data Laporan</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="laporanTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: SISWA VIEW (Student only) -->
+  <!-- ========================================================== -->
+  <div id="panelSiswaView" class="panel">
+    <div class="card">
+      <h2>👤 Poin Saya</h2>
+      <div id="siswaInfo" style="margin-bottom:16px;"></div>
+      <div id="siswaPeringatan"></div>
+      <div class="stats-grid" style="margin-top:12px;">
+        <div class="stat-card danger"><div class="number" id="siswaTotalPelanggaran">0</div><div class="label">Total Pelanggaran</div></div>
+        <div class="stat-card success"><div class="number" id="siswaTotalPrestasi">0</div><div class="label">Total Prestasi</div></div>
+        <div class="stat-card"><div class="number" id="siswaTotalAkhir">0</div><div class="label">Total Poin Akhir</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📜 Riwayat Saya</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Poin</th><th>Keterangan</th></tr></thead>
+          <tbody id="siswaRiwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript -->
+<script src="js/app.js"></script>
+</body>
+</html>
