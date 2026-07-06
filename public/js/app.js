@@ -1,4 +1,3 @@
-<script>
 // ============================================================
 // GLOBAL STATE
 // ============================================================
@@ -912,4 +911,3 @@ document.addEventListener('keydown', function(e) {
 });
 
 console.log('🚀 SIGAP - SMA Negeri Jatirogo siap digunakan!');
-</script>
