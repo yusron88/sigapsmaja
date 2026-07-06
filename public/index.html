@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGAP - SMA Negeri Jatirogo</title>
+  
+  <!-- External Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="https://sigapsmaja.vercel.app/favicon.ico">
+  <link rel="apple-touch-icon" href="https://sigapsmaja.vercel.app/logo-sma1jati.png">
+  <link rel="manifest" href="https://sigapsmaja.vercel.app/manifest.json">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- LOGIN PAGE -->
+<!-- ============================================================ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="logo">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo SMA Negeri Jatirogo" onerror="this.style.display='none'">
+      <h1>SIGAP</h1>
+      <p>SMA Negeri Jatirogo</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 400;">Sistem Penilaian &amp; Penegakan Disiplin</p>
+    </div>
+    
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="input-icon">
+        <i class="fas fa-user"></i>
+        <input type="text" id="loginUsername" placeholder="Username" required>
+      </div>
+      
+      <div class="input-icon">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+      </div>
+      
+      <button type="submit">Login</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MAIN APP -->
+<!-- ============================================================ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <img src="https://res.cloudinary.com/dptukmwku/image/upload/v1779207266/Desain_tanpa_judul_hukrxe.svg" alt="Logo" onerror="this.style.display='none'" style="height:40px;">
+      <div>
+        <h1>SIGAP (Sistem Penilaian & Penegakan Disiplin)</h1>
+        <span>SMA Negeri Jatirogo</span>
+      </div>
+    </div>
+    <div class="user-info">
+      <span id="userNameDisplay">User</span>
+      <span class="role-badge" id="userRoleDisplay">siswa</span>
+      <button onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav class="nav-tabs" id="navTabs">
+    <button class="active" data-tab="dashboard">📊 Dashboard</button>
+    <button data-tab="input">✏️ Input Poin</button>
+    <button data-tab="master" id="tabMaster" class="hidden">📚 Master Data</button>
+    <button data-tab="laporan">📄 Laporan</button>
+    <button data-tab="siswaView" id="tabSiswaView">👤 Poin Saya</button>
+  </nav>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: DASHBOARD -->
+  <!-- ========================================================== -->
+  <div id="panelDashboard" class="panel active">
+    <div class="stats-grid" id="dashboardStats">
+      <div class="stat-card"><div class="number" id="statSiswa">0</div><div class="label">Total Siswa</div></div>
+      <div class="stat-card danger"><div class="number" id="statViolations">0</div><div class="label">Pelanggaran</div></div>
+      <div class="stat-card success"><div class="number" id="statAchievements">0</div><div class="label">Prestasi</div></div>
+      <div class="stat-card"><div class="number" id="statKelas">0</div><div class="label">Kelas</div></div>
+    </div>
+    
+    <div class="card">
+      <h2>📈 Tren Poin Tahunan</h2>
+      <div class="chart-container">
+        <canvas id="trenChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>🏆 Top 5 Siswa dengan Poin Tertinggi</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th></tr></thead>
+          <tbody id="top5Table"></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>📋 Statistik per Kelas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Kelas</th><th>Jumlah Siswa</th><th>Rata-rata Poin</th><th>Poin Tertinggi</th></tr></thead>
+          <tbody id="kelasStatsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: INPUT POIN -->
+  <!-- ========================================================== -->
+  <div id="panelInput" class="panel">
+    <div class="card">
+      <h2>✏️ Input Poin Baru</h2>
+      <form id="poinForm" onsubmit="return submitPoin(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanggal Kejadian</label>
+            <input type="date" id="poinTanggal" required>
+          </div>
+          <div class="form-group">
+            <label>Kelas</label>
+            <select id="poinKelas" onchange="loadSiswaByKelas()" required>
+              <option value="">-- Pilih Kelas --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Siswa</label>
+            <select id="poinSiswa" required>
+              <option value="">-- Pilih Siswa --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="poinKategori" onchange="updatePoinOtomatis()" required>
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Jenis</label>
+            <select id="poinJenis" onchange="loadKategori()" required>
+              <option value="pelanggaran">❌ Pelanggaran</option>
+              <option value="prestasi">🏆 Prestasi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Poin (otomatis)</label>
+            <input type="number" id="poinNilai" readonly style="background:#f1f5f9;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Keterangan Detail</label>
+          <textarea id="poinKeterangan" placeholder="Deskripsi kejadian..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Petugas Validasi</label>
+            <input type="text" id="poinPetugas" placeholder="Nama petugas">
+          </div>
+          <div class="form-group">
+            <label>Upload Foto (opsional)</label>
+            <input type="file" id="poinFoto" accept="image/*">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Simpan Poin</button>
+        <div id="poinFormMessage" style="margin-top:12px;"></div>
+      </form>
+    </div>
+    
+    <div class="card">
+      <h2>📜 Riwayat Poin Terbaru</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Siswa</th><th>Kelas</th><th>Jenis</th><th>Kategori</th><th>Poin</th></tr></thead>
+          <tbody id="riwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: MASTER DATA (Admin only) -->
+  <!-- ========================================================== -->
+  <div id="panelMaster" class="panel">
+    <div class="card">
+      <h2>📚 Master Data</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('siswa')">Siswa</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kelas')">Kelas</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('kategori')">Kategori</button>
+        <button class="btn btn-primary btn-sm" onclick="showMasterTab('user')">User</button>
+      </div>
+      <div id="masterContent">
+        <p>Pilih tab di atas untuk mengelola data.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: LAPORAN -->
+  <!-- ========================================================== -->
+  <div id="panelLaporan" class="panel">
+    <div class="card">
+      <h2>📄 Cetak Laporan</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Filter Kelas</label>
+          <select id="laporanKelas">
+            <option value="Semua">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-success" onclick="cetakLaporan()">🖨️ Cetak PDF</button>
+        </div>
+      </div>
+      <div id="laporanMessage" style="margin-top:12px;"></div>
+    </div>
+    <div class="card">
+      <h2>📊 Data Laporan</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Poin Pelanggaran</th><th>Poin Prestasi</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="laporanTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- PANEL: SISWA VIEW (Student only) -->
+  <!-- ========================================================== -->
+  <div id="panelSiswaView" class="panel">
+    <div class="card">
+      <h2>👤 Poin Saya</h2>
+      <div id="siswaInfo" style="margin-bottom:16px;"></div>
+      <div id="siswaPeringatan"></div>
+      <div class="stats-grid" style="margin-top:12px;">
+        <div class="stat-card danger"><div class="number" id="siswaTotalPelanggaran">0</div><div class="label">Total Pelanggaran</div></div>
+        <div class="stat-card success"><div class="number" id="siswaTotalPrestasi">0</div><div class="label">Total Prestasi</div></div>
+        <div class="stat-card"><div class="number" id="siswaTotalAkhir">0</div><div class="label">Total Poin Akhir</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📜 Riwayat Saya</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Poin</th><th>Keterangan</th></tr></thead>
+          <tbody id="siswaRiwayatTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript -->
+<script src="js/app.js"></script>
+</body>
+</html>
