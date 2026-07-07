@@ -1,9 +1,0 @@
-{
-  "redirects": [
-    {
-      "source": "/((?!manifest.json|logo-sma1jati.png|favicon.ico|sw.js).*)" ,
-      "destination": "https://script.google.com/macros/s/AKfycbzwkwTJyZiPfibHxH41eWvQ23IduPM6ySXkEfNAQv47UZQSxCo1SvpQLLcmUxmAtrxw/exec",
-      "permanent": false
-    }
-  ]
-}
